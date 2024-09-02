@@ -22,8 +22,17 @@ ATurretPawn::ATurretPawn()
 TArray<FName> ATurretPawn::GetMaterialTeamColorSlotNames() const
 {
 	TSet<FName> MaterialNames;
-	MaterialNames.Append(BaseMesh->GetMaterialSlotNames());
-	MaterialNames.Append(TurretMesh->GetMaterialSlotNames());
+
+	if (IsValid(BaseMesh))
+	{
+		MaterialNames.Append(BaseMesh->GetMaterialSlotNames());
+	}
+
+	if (IsValid(TurretMesh))
+	{
+		MaterialNames.Append(TurretMesh->GetMaterialSlotNames());
+	}
+
 	return MaterialNames.Array();
 }
 
@@ -32,10 +41,10 @@ void ATurretPawn::SetupTeamColorDynamicMaterial(UStaticMeshComponent* Mesh)
 	if (!IsValid(Mesh) || MaterialTeamColorSlotName.IsNone())return;
 
 	const int32 MaterialIndex = Mesh->GetMaterialIndex(MaterialTeamColorSlotName);
-	if (MaterialIndex == INDEX_NONE)return;
+	if (MaterialIndex == INDEX_NONE) return;
 
 	UMaterialInterface* Material = Mesh->GetMaterial(MaterialIndex);
-	if (!IsValid(Material))return;
+	if (!IsValid(Material)) return;
 
 	UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(Material, nullptr);
 	DynamicMaterial->SetVectorParameterValue(MaterialTeamColorParameterName, TeamColor);
