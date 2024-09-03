@@ -13,9 +13,10 @@ ATankPawn::ATankPawn()
 void ATankPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	if(!IsValid(PlayerInputComponent)) return;
 
 	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-	if (EnhancedInputComponent) return;
+	if (!IsValid(EnhancedInputComponent)) return;
 
 	if (IsValid(MoveForwardAction))
 	{
