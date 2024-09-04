@@ -34,15 +34,7 @@ void ATankPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	}
 }
 
-void ATankPawn::Move(float AxisValue)
-{
-}
-
 void ATankPawn::Move(const FInputActionInstance& ActionData)
-{
-}
-
-void ATankPawn::Turn(const float AxisValue)
 {
 }
 

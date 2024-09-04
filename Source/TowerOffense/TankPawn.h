@@ -30,12 +30,7 @@ class TOWEROFFENSE_API ATankPawn : public ATurretPawn
 private:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	
-	UFUNCTION(BlueprintCallable)
-	void Move(const float AxisValue);
 	void Move(const FInputActionInstance& ActionData);
-	
-	UFUNCTION(BlueprintCallable)
-	void Turn(const float AxisValue);
 	void Turn(const FInputActionInstance& ActionData);
 	
 	UFUNCTION(BlueprintCallable)
