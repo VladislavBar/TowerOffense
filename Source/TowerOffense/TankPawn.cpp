@@ -94,8 +94,8 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 
 	const float AccelerationProgress = FMath::Clamp(ActionData.GetElapsedTime() / AccelerationDuration, 0.f, 1.f);
 	const float AccelerationValue = FMath::InterpEaseIn(0.f, AccelerationDuration, AccelerationProgress,
-	                                              AccelerationExponent);
-	AddActorLocalOffset(FVector(0.f, Speed * AccelerationValue * AxisValue, 0.f));
+	                                                    AccelerationExponent);
+	AddActorLocalOffset(FVector(0.f, Speed * AccelerationValue * AxisValue, 0.f), true);
 }
 
 void ATankPawn::Turn(const FInputActionInstance& ActionData)
