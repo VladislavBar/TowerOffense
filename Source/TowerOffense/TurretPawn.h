@@ -21,6 +21,8 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> TurretMesh;
 
+	bool bLockTarget = false;
+
 private:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<USceneComponent> ProjectileSpawnPoint;
@@ -45,12 +47,13 @@ private:
 
 protected:
 	void SetTargetLocation(const FVector& Location);
-	void RotateTurretMesh(const float DeltaSeconds);
+	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location);
+	virtual void Tick(float DeltaSeconds) override;
 
 private:
 	void SetupTeamColorDynamicMaterial(UStaticMeshComponent* Mesh);
 	virtual void PostInitializeComponents() override;
-	virtual void Tick(float DeltaSeconds) override;
+	void RotateTurretMesh(const float DeltaSeconds);
 
 public:
 	ATurretPawn();

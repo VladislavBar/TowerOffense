@@ -10,8 +10,7 @@
 #include "TankPawn.generated.h"
 
 UCLASS()
-class TOWEROFFENSE_API ATankPawn : public ATurretPawn
-{
+class TOWEROFFENSE_API ATankPawn : public ATurretPawn {
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly)
@@ -57,15 +56,23 @@ private:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	void SetupActions(UInputComponent* PlayerInputComponent);
 	void SetupInputContext();
-	void ToggleCursor();
+	void ShowCursor();
+	void HideCursor();
 
 	void Move(const FInputActionInstance& ActionData);
 	void Turn(const FInputActionInstance& ActionData);
 	void RotateCamera(const FInputActionInstance& ActionData);
-	void SetTarget();
+	void ToggleAutoTarget();
+	void FindAndLockTarget();
+	void FindTarget(const APlayerController* PlayerController, FHitResult& HitResultOut) const;
+	void RotateTurretMeshByCursor(const float DeltaSeconds);
+	void ResetCursorPositionWhenRotating();
 
 	UFUNCTION(BlueprintCallable)
 	void Fire();
+	virtual void Tick(float DeltaSeconds) override;
+	virtual void BeginPlay() override;
+	APlayerController* GetPlayerController() const;
 
 public:
 	ATankPawn();

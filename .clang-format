@@ -10,13 +10,13 @@ AlignOperands: AlignAfterOperator
 AlignTrailingComments: true
 AllowShortBlocksOnASingleLine: Empty
 AllowShortEnumsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: Inline
+AllowShortFunctionsOnASingleLine: true
 AllowShortIfStatementsOnASingleLine: true
 AllowShortLambdasOnASingleLine: Inline
 BasedOnStyle: LLVM
 BraceWrapping:
   AfterCaseLabel: true
-  AfterClass: true
+  AfterClass: false
   AfterControlStatement: true
   AfterEnum: true
   AfterFunction: true
@@ -26,6 +26,7 @@ BraceWrapping:
   AfterUnion: true
   AfterExternBlock: true
   BeforeCatch: true
+  BeforeClass: false
   BeforeElse: true
   BeforeLambdaBody: false
   BeforeWhile: true
@@ -60,6 +61,7 @@ Language: Cpp
 NamespaceIndentation: None
 PackConstructorInitializers: CurrentLine
 PointerAlignment: Left
+SeparateDefinitionBlocks: Always
 SortIncludes: true
 SpaceBeforeCaseColon: false
 Standard: Cpp11

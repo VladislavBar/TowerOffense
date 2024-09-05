@@ -38,10 +38,14 @@ TArray<FName> ATurretPawn::GetMaterialTeamColorSlotNames() const
 
 void ATurretPawn::RotateTurretMesh(const float DeltaSeconds)
 {
-	if (!IsValid(TurretMesh)) return;
+	if (!bLockTarget || !IsValid(TurretMesh)) return;
+	return RotateTurretMeshToLocation(DeltaSeconds, TargetLocation);
+}
 
+void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location)
+{
 	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
-	FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TargetLocation);
+	FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Location);
 
 	// That is needed in case when a TurretMesh is aligned by default in a different direction than the x-axis
 	// In the mesh provided, the turret mesh is aligned by default by the y-axis...

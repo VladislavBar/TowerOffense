@@ -51,13 +51,19 @@ void ATankPawn::SetupActions(UInputComponent* PlayerInputComponent)
 	if (IsValid(SetTargetAction))
 	{
 		EnhancedInputComponent->BindAction(SetTargetAction, ETriggerEvent::Started, this,
-			&ATankPawn::SetTarget);
+			&ATankPawn::ToggleAutoTarget);
 	}
 
 	if (IsValid(ToggleCursorAction))
 	{
 		EnhancedInputComponent->BindAction(ToggleCursorAction, ETriggerEvent::Started, this,
-			&ATankPawn::ToggleCursor);
+			&ATankPawn::HideCursor);
+	}
+
+	if (IsValid(ToggleCursorAction))
+	{
+		EnhancedInputComponent->BindAction(ToggleCursorAction, ETriggerEvent::Completed, this,
+			&ATankPawn::ShowCursor);
 	}
 }
 
@@ -75,12 +81,20 @@ void ATankPawn::SetupInputContext()
 	EnhancedInputLocalPlayerSubsystem->AddMappingContext(InputMappingContext, 0);
 }
 
-void ATankPawn::ToggleCursor()
+void ATankPawn::ShowCursor()
 {
-	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+	APlayerController* PlayerController = GetPlayerController();
 	if (!IsValid(PlayerController)) return;
 
-	PlayerController->bShowMouseCursor = !PlayerController->bShowMouseCursor;
+	PlayerController->bShowMouseCursor = true;
+}
+
+void ATankPawn::HideCursor()
+{
+	APlayerController* PlayerController = GetPlayerController();
+	if (!IsValid(PlayerController)) return;
+
+	PlayerController->bShowMouseCursor = false;
 }
 
 void ATankPawn::Move(const FInputActionInstance& ActionData)
@@ -109,25 +123,101 @@ void ATankPawn::RotateCamera(const FInputActionInstance& ActionData)
 {
 	if (!IsValid(SpringArm)) return;
 
+	const APlayerController* PlayerController = GetPlayerController();
+	if (!IsValid(PlayerController) || PlayerController->bShowMouseCursor) return;
+
 	const FVector2D RotationVector2D = ActionData.GetValue().Get<FVector2D>();
 	const FVector RotationVector = FVector(0.f, 0.f, RotationVector2D.X);
 	SpringArm->AddWorldRotation(FRotator::MakeFromEuler(RotationVector));
 }
 
-void ATankPawn::SetTarget()
+void ATankPawn::ToggleAutoTarget()
 {
-	const UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
+	if (bLockTarget)
+	{
+		bLockTarget = false;
+		GEngine->AddOnScreenDebugMessage(1, 99999.f, FColor::Red, FString::Printf(TEXT("Target unlocked! Following the mouse cursor...")));
+		return;
+	}
 
-	const APlayerController* PlayerController = World->GetFirstPlayerController();
+	FindAndLockTarget();
+	bLockTarget = true;
+}
+
+void ATankPawn::FindAndLockTarget()
+{
+	const APlayerController* PlayerController = GetPlayerController();
 	if (!IsValid(PlayerController)) return;
 
 	FHitResult HitResult;
-	PlayerController->GetHitResultUnderCursor(ECC_Visibility, false, HitResult);
-	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Red, false, 5.f);
+	FindTarget(PlayerController, HitResult);
+	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Green, false, 5.f);
 	SetTargetLocation(HitResult.Location);
+	bLockTarget = true;
+
+	GEngine->AddOnScreenDebugMessage(1, 99999.f, FColor::Red, FString::Printf(TEXT("Target locked!")));
+}
+
+void ATankPawn::FindTarget(const APlayerController* PlayerController, FHitResult& HitResultOut) const
+{
+	if (!IsValid(PlayerController)) return;
+
+	FVector2D MousePosition = FVector2D::ZeroVector;
+	PlayerController->GetMousePosition(MousePosition.X, MousePosition.Y);
+
+	FCollisionQueryParams CollisionQueryParams;
+	CollisionQueryParams.AddIgnoredActor(this);
+
+	PlayerController->GetHitResultAtScreenPosition(MousePosition, ECC_Visibility, CollisionQueryParams, HitResultOut);
+}
+
+void ATankPawn::RotateTurretMeshByCursor(const float DeltaSeconds)
+{
+	if (bLockTarget || !IsValid(TurretMesh)) return;
+	
+	const APlayerController* PlayerController = GetPlayerController();
+	if (!IsValid(PlayerController)) return;
+
+	FHitResult HitResult;
+	FindTarget(PlayerController, HitResult);
+	RotateTurretMeshToLocation(DeltaSeconds, HitResult.Location);
+	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Red, false, 5.f);
+}
+
+void ATankPawn::ResetCursorPositionWhenRotating()
+{
+	APlayerController* PlayerController = GetPlayerController();
+	if (!IsValid(PlayerController) || PlayerController->bShowMouseCursor) return;
+
+	int32 ViewportWidth = 0;
+	int32 ViewportHeight = 0;
+
+	PlayerController->GetViewportSize(ViewportWidth, ViewportHeight);
+	PlayerController->SetMouseLocation(ViewportWidth / 2, ViewportHeight / 2);
 }
 
 void ATankPawn::Fire()
 {
+}
+
+void ATankPawn::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	RotateTurretMeshByCursor(DeltaSeconds);
+	ResetCursorPositionWhenRotating();
+}
+
+void ATankPawn::BeginPlay()
+{
+	Super::BeginPlay();
+
+	ShowCursor();
+}
+
+APlayerController* ATankPawn::GetPlayerController() const
+{
+	UWorld* World = GetWorld();
+	if (!IsValid(World)) return nullptr;
+
+	return World->GetFirstPlayerController();
 }
