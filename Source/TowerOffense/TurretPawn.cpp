@@ -44,6 +44,7 @@ void ATurretPawn::RotateTurretMesh(const float DeltaSeconds)
 
 void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location)
 {
+	if(!IsValid(TurretMesh)) return;
 	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
 	FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Location);
 

@@ -71,11 +71,13 @@ void ATankPawn::SetupInputContext()
 {
 	if (!IsValid(InputMappingContext)) return;
 
-	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	const ULocalPlayer* LocalPlayer = World->GetFirstLocalPlayerFromController();
 	if (!IsValid(LocalPlayer)) return;
 
-	UEnhancedInputLocalPlayerSubsystem* EnhancedInputLocalPlayerSubsystem = LocalPlayer->GetSubsystem<
-		UEnhancedInputLocalPlayerSubsystem>();
+	UEnhancedInputLocalPlayerSubsystem* EnhancedInputLocalPlayerSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
 	if (!IsValid(EnhancedInputLocalPlayerSubsystem)) return;
 
 	EnhancedInputLocalPlayerSubsystem->AddMappingContext(InputMappingContext, 0);
@@ -122,12 +124,13 @@ void ATankPawn::Turn(const FInputActionInstance& ActionData)
 void ATankPawn::RotateCamera(const FInputActionInstance& ActionData)
 {
 	if (!IsValid(SpringArm)) return;
-
+	
 	const APlayerController* PlayerController = GetPlayerController();
 	if (!IsValid(PlayerController) || PlayerController->bShowMouseCursor) return;
 
 	const FVector2D RotationVector2D = ActionData.GetValue().Get<FVector2D>();
 	const FVector RotationVector = FVector(0.f, 0.f, RotationVector2D.X);
+
 	SpringArm->AddWorldRotation(FRotator::MakeFromEuler(RotationVector));
 }
 
@@ -136,7 +139,11 @@ void ATankPawn::ToggleAutoTarget()
 	if (bLockTarget)
 	{
 		bLockTarget = false;
-		GEngine->AddOnScreenDebugMessage(1, 99999.f, FColor::Red, FString::Printf(TEXT("Target unlocked! Following the mouse cursor...")));
+		if (IsValid(GEngine))
+		{
+			GEngine->AddOnScreenDebugMessage(1, 99999.f, FColor::Red, FString::Printf(TEXT("Target unlocked! Following the mouse cursor...")));
+		}
+
 		return;
 	}
 
@@ -155,7 +162,10 @@ void ATankPawn::FindAndLockTarget()
 	SetTargetLocation(HitResult.Location);
 	bLockTarget = true;
 
-	GEngine->AddOnScreenDebugMessage(1, 99999.f, FColor::Red, FString::Printf(TEXT("Target locked!")));
+	if (IsValid(GEngine))
+	{
+		GEngine->AddOnScreenDebugMessage(1, 99999.f, FColor::Red, FString::Printf(TEXT("Target locked!")));
+	}
 }
 
 void ATankPawn::FindTarget(const APlayerController* PlayerController, FHitResult& HitResultOut) const
@@ -174,7 +184,7 @@ void ATankPawn::FindTarget(const APlayerController* PlayerController, FHitResult
 void ATankPawn::RotateTurretMeshByCursor(const float DeltaSeconds)
 {
 	if (bLockTarget || !IsValid(TurretMesh)) return;
-	
+
 	const APlayerController* PlayerController = GetPlayerController();
 	if (!IsValid(PlayerController)) return;
 
