@@ -1,4 +1,5 @@
 #include "TankPawn.h"
+
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 
@@ -106,6 +107,8 @@ void ATankPawn::Turn(const FInputActionInstance& ActionData)
 
 void ATankPawn::RotateCamera(const FInputActionInstance& ActionData)
 {
+	if (!IsValid(SpringArm)) return;
+
 	const FVector2D RotationVector2D = ActionData.GetValue().Get<FVector2D>();
 	const FVector RotationVector = FVector(0.f, 0.f, RotationVector2D.X);
 	SpringArm->AddWorldRotation(FRotator::MakeFromEuler(RotationVector));
@@ -113,7 +116,10 @@ void ATankPawn::RotateCamera(const FInputActionInstance& ActionData)
 
 void ATankPawn::SetTarget()
 {
-	const APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	const APlayerController* PlayerController = World->GetFirstPlayerController();
 	if (!IsValid(PlayerController)) return;
 
 	FHitResult HitResult;

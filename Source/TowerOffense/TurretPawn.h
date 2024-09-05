@@ -37,16 +37,14 @@ private:
 	UFUNCTION()
 	TArray<FName> GetMaterialTeamColorSlotNames() const;
 
-	FVector TargetLocation;
+	FVector TargetLocation = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere, Category = "Turret Rotation", meta = (ClampMin = "0.0"))
 	float RotationSpeed = 2.f;
 	float MeshDefaultRotationYaw = 90.f;
 
-public:
-	void SetTargetLocation(const FVector& Location);
-
 protected:
+	void SetTargetLocation(const FVector& Location);
 	void RotateTurretMesh(const float DeltaSeconds);
 
 private:
