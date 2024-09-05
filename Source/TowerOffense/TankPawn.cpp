@@ -44,19 +44,19 @@ void ATankPawn::SetupActions(UInputComponent* PlayerInputComponent)
 	if (IsValid(RotateCameraAction))
 	{
 		EnhancedInputComponent->BindAction(RotateCameraAction, ETriggerEvent::Triggered, this,
-		                                   &ATankPawn::RotateCamera);
+			&ATankPawn::RotateCamera);
 	}
 
 	if (IsValid(SetTargetAction))
 	{
 		EnhancedInputComponent->BindAction(SetTargetAction, ETriggerEvent::Started, this,
-		                                   &ATankPawn::SetTarget);
+			&ATankPawn::SetTarget);
 	}
 
 	if (IsValid(ToggleCursorAction))
 	{
 		EnhancedInputComponent->BindAction(ToggleCursorAction, ETriggerEvent::Started, this,
-		                                   &ATankPawn::ToggleCursor);
+			&ATankPawn::ToggleCursor);
 	}
 }
 
@@ -94,7 +94,7 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 
 	const float AccelerationProgress = FMath::Clamp(ActionData.GetElapsedTime() / AccelerationDuration, 0.f, 1.f);
 	const float AccelerationValue = FMath::InterpEaseIn(0.f, AccelerationDuration, AccelerationProgress,
-	                                                    AccelerationExponent);
+		AccelerationExponent);
 	AddActorLocalOffset(FVector(0.f, Speed * AccelerationValue * AxisValue, 0.f), true);
 }
 

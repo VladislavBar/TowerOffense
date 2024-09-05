@@ -1,6 +1,6 @@
 #include "TurretPawn.h"
-#include "Kismet/KismetMathLibrary.h"
 
+#include "Kismet/KismetMathLibrary.h"
 
 ATurretPawn::ATurretPawn()
 {
@@ -18,7 +18,6 @@ ATurretPawn::ATurretPawn()
 	ProjectileSpawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("ProjectileSpawnPoint"));
 	ProjectileSpawnPoint->SetupAttachment(RootComponent);
 }
-
 
 TArray<FName> ATurretPawn::GetMaterialTeamColorSlotNames() const
 {
@@ -39,31 +38,30 @@ TArray<FName> ATurretPawn::GetMaterialTeamColorSlotNames() const
 
 void ATurretPawn::RotateTurretMesh(const float DeltaSeconds)
 {
-	if (!IsValid(TurretMesh) ) return;
+	if (!IsValid(TurretMesh)) return;
 
 	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
 	FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TargetLocation);
-	
-	//That is needed in case when a TurretMesh is aligned by default in a different direction than the x-axis
-	//In the mesh provided, the turret mesh is aligned by default by the y-axis...
+
+	// That is needed in case when a TurretMesh is aligned by default in a different direction than the x-axis
+	// In the mesh provided, the turret mesh is aligned by default by the y-axis...
 	TargetRotation.Yaw -= MeshDefaultRotationYaw;
-	
+
 	FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaSeconds, RotationSpeed);
 	NewRotation.Roll = 0.f;
 	NewRotation.Pitch = 0.f;
-	
+
 	TurretMesh->SetWorldRotation(NewRotation);
 }
 
 void ATurretPawn::SetTargetLocation(const FVector& Location)
 {
 	TargetLocation = Location;
-	GEngine->AddOnScreenDebugMessage(2, 1.f, FColor::Red, FString::Printf(TEXT("New Target Location: %s"), *TargetLocation.ToString()));
 }
 
 void ATurretPawn::SetupTeamColorDynamicMaterial(UStaticMeshComponent* Mesh)
 {
-	if (!IsValid(Mesh) || MaterialTeamColorSlotName.IsNone())return;
+	if (!IsValid(Mesh) || MaterialTeamColorSlotName.IsNone()) return;
 
 	const int32 MaterialIndex = Mesh->GetMaterialIndex(MaterialTeamColorSlotName);
 	if (MaterialIndex == INDEX_NONE) return;

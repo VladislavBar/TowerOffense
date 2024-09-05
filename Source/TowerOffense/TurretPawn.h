@@ -1,8 +1,9 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Components/CapsuleComponent.h"
+#include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+
 #include "TurretPawn.generated.h"
 
 UCLASS()
@@ -20,11 +21,11 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> TurretMesh;
 
-private: 
+private:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<USceneComponent> ProjectileSpawnPoint;
 
-	UPROPERTY(EditAnywhere, meta=(GetOptions="GetMaterialTeamColorSlotNames"))
+	UPROPERTY(EditAnywhere, meta = (GetOptions = "GetMaterialTeamColorSlotNames"))
 	FName MaterialTeamColorSlotName;
 
 	UPROPERTY(EditAnywhere)
@@ -38,16 +39,16 @@ private:
 
 	FVector TargetLocation;
 
-	UPROPERTY(EditAnywhere, Category = "Turret Rotation", meta=(ClampMin="0.0"))
+	UPROPERTY(EditAnywhere, Category = "Turret Rotation", meta = (ClampMin = "0.0"))
 	float RotationSpeed = 2.f;
 	float MeshDefaultRotationYaw = 90.f;
 
 public:
 	void SetTargetLocation(const FVector& Location);
-	
+
 protected:
 	void RotateTurretMesh(const float DeltaSeconds);
-	
+
 private:
 	void SetupTeamColorDynamicMaterial(UStaticMeshComponent* Mesh);
 	virtual void PostInitializeComponents() override;
