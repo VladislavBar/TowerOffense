@@ -21,12 +21,12 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> TurretMesh;
 
-	bool bLockTarget = false;
-
-private:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<USceneComponent> ProjectileSpawnPoint;
 
+	bool bLockTarget = false;
+
+private:
 	UPROPERTY(EditAnywhere, meta = (GetOptions = "GetMaterialTeamColorSlotNames"))
 	FName MaterialTeamColorSlotName;
 
@@ -41,13 +41,20 @@ private:
 
 	FVector TargetLocation = FVector::ZeroVector;
 
+protected:
 	UPROPERTY(EditAnywhere, Category = "Turret Rotation", meta = (ClampMin = "0.0"))
-	float RotationSpeed = 2.f;
+	float RotationInterpExponent = 2.f;
 	float MeshDefaultRotationYaw = 90.f;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void Fire();
+	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location);
+	FRotator GetTurretMeshRotation() const;
+	FVector GetProjectileSpawnLocation() const;
 
 protected:
 	void SetTargetLocation(const FVector& Location);
-	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location);
 	virtual void Tick(float DeltaSeconds) override;
 
 private:

@@ -42,9 +42,14 @@ void ATurretPawn::RotateTurretMesh(const float DeltaSeconds)
 	return RotateTurretMeshToLocation(DeltaSeconds, TargetLocation);
 }
 
+void ATurretPawn::Fire()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Fire!"));
+}
+
 void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location)
 {
-	if(!IsValid(TurretMesh)) return;
+	if (!IsValid(TurretMesh)) return;
 	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
 	FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Location);
 
@@ -52,11 +57,26 @@ void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVe
 	// In the mesh provided, the turret mesh is aligned by default by the y-axis...
 	TargetRotation.Yaw -= MeshDefaultRotationYaw;
 
-	FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaSeconds, RotationSpeed);
+	FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaSeconds, RotationInterpExponent);
 	NewRotation.Roll = 0.f;
 	NewRotation.Pitch = 0.f;
 
 	TurretMesh->SetWorldRotation(NewRotation);
+}
+
+FRotator ATurretPawn::GetTurretMeshRotation() const
+{
+	if (!IsValid(TurretMesh)) return FRotator::ZeroRotator;
+	
+	FRotator Rotation = TurretMesh->GetComponentRotation();
+	Rotation.Yaw += MeshDefaultRotationYaw;
+	return Rotation;
+}
+
+FVector ATurretPawn::GetProjectileSpawnLocation() const
+{
+	if (!IsValid(ProjectileSpawnPoint)) return FVector::ZeroVector;
+	return ProjectileSpawnPoint->GetComponentLocation();
 }
 
 void ATurretPawn::SetTargetLocation(const FVector& Location)

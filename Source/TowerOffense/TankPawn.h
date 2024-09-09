@@ -68,8 +68,6 @@ private:
 	void RotateTurretMeshByCursor(const float DeltaSeconds);
 	void ResetCursorPositionWhenRotating();
 
-	UFUNCTION(BlueprintCallable)
-	void Fire();
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 	APlayerController* GetPlayerController() const;

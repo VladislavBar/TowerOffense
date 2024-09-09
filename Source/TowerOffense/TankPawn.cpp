@@ -124,7 +124,7 @@ void ATankPawn::Turn(const FInputActionInstance& ActionData)
 void ATankPawn::RotateCamera(const FInputActionInstance& ActionData)
 {
 	if (!IsValid(SpringArm)) return;
-	
+
 	const APlayerController* PlayerController = GetPlayerController();
 	if (!IsValid(PlayerController) || PlayerController->bShowMouseCursor) return;
 
@@ -204,10 +204,6 @@ void ATankPawn::ResetCursorPositionWhenRotating()
 
 	PlayerController->GetViewportSize(ViewportWidth, ViewportHeight);
 	PlayerController->SetMouseLocation(ViewportWidth / 2, ViewportHeight / 2);
-}
-
-void ATankPawn::Fire()
-{
 }
 
 void ATankPawn::Tick(float DeltaSeconds)
