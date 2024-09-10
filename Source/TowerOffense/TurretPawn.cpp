@@ -47,7 +47,7 @@ void ATurretPawn::Fire()
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Fire!"));
 }
 
-void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location)
+void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
 {
 	if (!IsValid(TurretMesh)) return;
 	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
@@ -56,6 +56,21 @@ void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVe
 	// That is needed in case when a TurretMesh is aligned by default in a different direction than the x-axis
 	// In the mesh provided, the turret mesh is aligned by default by the y-axis...
 	TargetRotation.Yaw -= MeshDefaultRotationYaw;
+	if (bInstantRotation)
+	{
+		float DeltaRotationYaw = TargetRotation.Yaw - CurrentRotation.Yaw;
+		if (DeltaRotationYaw > 180)
+		{
+			DeltaRotationYaw -= 360;
+		}
+		else if (DeltaRotationYaw < -180)
+		{
+			DeltaRotationYaw += 360;
+		}
+
+		TurretMesh->AddWorldRotation(FRotator(0, FMath::Clamp(DeltaRotationYaw * DeltaSeconds * RotationSpeedWhenTargetLocked, -MaxInstantRotationSpeed, MaxInstantRotationSpeed), 0));
+		return;
+	}
 
 	FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaSeconds, RotationInterpExponent);
 	NewRotation.Roll = 0.f;
@@ -67,7 +82,7 @@ void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVe
 FRotator ATurretPawn::GetTurretMeshRotation() const
 {
 	if (!IsValid(TurretMesh)) return FRotator::ZeroRotator;
-	
+
 	FRotator Rotation = TurretMesh->GetComponentRotation();
 	Rotation.Yaw += MeshDefaultRotationYaw;
 	return Rotation;

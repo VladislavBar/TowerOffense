@@ -1,6 +1,7 @@
 #include "BTTask_RotateEnemyTurretToTarget.h"
 
 #include "AIController.h"
+#include "TankPawn.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "TurretPawn.h"
 
@@ -29,8 +30,8 @@ void UBTTask_RotateEnemyTurretToTarget::TickTask(UBehaviorTreeComponent& OwnerCo
 	if (!IsValid(Blackboard)) return FinishLatentAbort(OwnerComp);
 
 	PreviousSelfRotation = SelfTurret->GetTurretMeshRotation();
-	const FVector TargetLocation = Blackboard->GetValueAsVector("TargetLocation");
-	SelfTurret->RotateTurretMeshToLocation(DeltaSeconds, TargetLocation);
+	const ATankPawn* Target = Cast<ATankPawn>(Blackboard->GetValueAsObject("Target"));
+	SelfTurret->RotateTurretMeshToLocation(DeltaSeconds, Target->GetActorLocation(), true);
 
 	if (PreviousSelfRotation.Equals(SelfTurret->GetTurretMeshRotation(), 0.1f))
 	{

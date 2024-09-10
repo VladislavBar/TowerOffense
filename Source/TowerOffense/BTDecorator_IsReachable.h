@@ -16,15 +16,14 @@ class TOWEROFFENSE_API UBTDecorator_IsReachable : public UBTDecorator_Blackboard
 	float MaxDistance = 200.f;
 
 	UPROPERTY(EditInstanceOnly)
-	FBlackboardKeySelector TargetLocationKey;
+	FBlackboardKeySelector TargetKey;
 
 public:
 	UBTDecorator_IsReachable();
 
 private:
 	virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const override;
-	bool HasStraightView(const ATowerPawn* OwnerComp, const FVector& TargetLocation) const;
+	bool HasStraightView(const ATowerPawn* OwnerComp, const ATankPawn* Target) const;
 	ATowerPawn* GetTowerPawn(const UBehaviorTreeComponent& OwnerComp) const;
-	ATankPawn* GetPlayerTankPawn(const UWorld* World) const;
 	virtual FString GetStaticDescription() const override;
 };

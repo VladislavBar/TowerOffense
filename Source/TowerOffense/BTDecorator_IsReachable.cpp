@@ -8,7 +8,7 @@
 
 UBTDecorator_IsReachable::UBTDecorator_IsReachable()
 {
-	TargetLocationKey.AddVectorFilter(this, GET_MEMBER_NAME_CHECKED(UBTDecorator_IsReachable, TargetLocationKey));
+	TargetKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UBTDecorator_IsReachable, TargetKey), ATankPawn::StaticClass());
 	NodeName = TEXT("Is Reachable (From Enemy Tower to Tank Pawn)");
 }
 
@@ -19,33 +19,33 @@ bool UBTDecorator_IsReachable::CalculateRawConditionValue(UBehaviorTreeComponent
 	const UBlackboardComponent* Blackboard = OwnerComp.GetBlackboardComponent();
 	if (!IsValid(Blackboard)) return false;
 
-	const FVector TargetLocation = Blackboard->GetValueAsVector(TargetLocationKey.SelectedKeyName);
-
+	const ATankPawn* Target = Cast<ATankPawn>(Blackboard->GetValueAsObject(TargetKey.SelectedKeyName));
+	if(!IsValid(Target)) return false;
+	
 	const ATowerPawn* TowerPawn = GetTowerPawn(OwnerComp);
 	if (!IsValid(TowerPawn)) return false;
 
-	if (FVector::DistXY(TowerPawn->GetActorLocation(), TargetLocation) > MaxDistance) return false;
-	if (HasStraightView(TowerPawn, TargetLocation)) return true;
+	if (FVector::DistXY(TowerPawn->GetActorLocation(), Target->GetActorLocation()) > MaxDistance) return false;
+	if (HasStraightView(TowerPawn, Target)) return true;
 
 	return false;
 }
 
-bool UBTDecorator_IsReachable::HasStraightView(const ATowerPawn* TowerPawn, const FVector& TargetLocation) const
+bool UBTDecorator_IsReachable::HasStraightView(const ATowerPawn* TowerPawn, const ATankPawn* Target) const
 {
+	if(!IsValid(TowerPawn) || !IsValid(Target)) return false;
+	
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return false;
 
-	const ATankPawn* TankPawn = GetPlayerTankPawn(World);
-	if (!IsValid(TankPawn)) return false;
-
-	FRotator ExpectedRotation = UKismetMathLibrary::FindLookAtRotation(TowerPawn->GetActorLocation(), TargetLocation);
+	FRotator ExpectedRotation = UKismetMathLibrary::FindLookAtRotation(TowerPawn->GetActorLocation(), Target->GetActorLocation());
 	TowerPawn->AdjustRotationToMeshRotationOffset(ExpectedRotation);
 	const FRotator CurrentRotation = TowerPawn->GetRelativeTurretMeshRotation();
 	const FVector ExpectedProjectileSpawnLocation = TowerPawn->GetActorLocation() + (ExpectedRotation - CurrentRotation).RotateVector(TowerPawn->GetRelativeProjectileSpawnLocation());
 
 	FHitResult HitResult;
-	UKismetSystemLibrary::LineTraceSingle(World, ExpectedProjectileSpawnLocation, TargetLocation, UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), EDrawDebugTrace::None, HitResult, true, FLinearColor::Green, FLinearColor::Red, 1.f);
-	return HitResult.GetActor() == TankPawn;
+	UKismetSystemLibrary::LineTraceSingle(World, ExpectedProjectileSpawnLocation, Target->GetActorLocation(), UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), EDrawDebugTrace::None, HitResult, true, FLinearColor::Green, FLinearColor::Red, 1.f);
+	return HitResult.GetActor() == Target;
 }
 
 ATowerPawn* UBTDecorator_IsReachable::GetTowerPawn(const UBehaviorTreeComponent& OwnerComp) const
@@ -54,14 +54,6 @@ ATowerPawn* UBTDecorator_IsReachable::GetTowerPawn(const UBehaviorTreeComponent&
 	if (!IsValid(AIController)) return nullptr;
 
 	return Cast<ATowerPawn>(AIController->GetPawn());
-}
-
-ATankPawn* UBTDecorator_IsReachable::GetPlayerTankPawn(const UWorld* World) const
-{
-	const APlayerController* PlayerController = World->GetFirstPlayerController();
-	if (!IsValid(PlayerController)) return nullptr;
-
-	return Cast<ATankPawn>(PlayerController->GetPawn());
 }
 
 FString UBTDecorator_IsReachable::GetStaticDescription() const

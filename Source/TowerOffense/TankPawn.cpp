@@ -53,18 +53,6 @@ void ATankPawn::SetupActions(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(SetTargetAction, ETriggerEvent::Started, this,
 			&ATankPawn::ToggleAutoTarget);
 	}
-
-	if (IsValid(ToggleCursorAction))
-	{
-		EnhancedInputComponent->BindAction(ToggleCursorAction, ETriggerEvent::Started, this,
-			&ATankPawn::HideCursor);
-	}
-
-	if (IsValid(ToggleCursorAction))
-	{
-		EnhancedInputComponent->BindAction(ToggleCursorAction, ETriggerEvent::Completed, this,
-			&ATankPawn::ShowCursor);
-	}
 }
 
 void ATankPawn::SetupInputContext()
@@ -191,7 +179,11 @@ void ATankPawn::RotateTurretMeshByCursor(const float DeltaSeconds)
 	FHitResult HitResult;
 	FindTarget(PlayerController, HitResult);
 	RotateTurretMeshToLocation(DeltaSeconds, HitResult.Location);
-	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Red, false, 5.f);
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Red, false, 0.f);
 }
 
 void ATankPawn::ResetCursorPositionWhenRotating()
@@ -201,9 +193,12 @@ void ATankPawn::ResetCursorPositionWhenRotating()
 
 	int32 ViewportWidth = 0;
 	int32 ViewportHeight = 0;
-
 	PlayerController->GetViewportSize(ViewportWidth, ViewportHeight);
-	PlayerController->SetMouseLocation(ViewportWidth / 2, ViewportHeight / 2);
+
+	FVector2D MousePosition = FVector2D::ZeroVector;
+	PlayerController->GetMousePosition(MousePosition.X, MousePosition.Y);
+
+	PlayerController->SetMouseLocation(ViewportWidth / 2, MousePosition.Y);
 }
 
 void ATankPawn::Tick(float DeltaSeconds)
@@ -217,7 +212,7 @@ void ATankPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ShowCursor();
+	HideCursor();
 }
 
 APlayerController* ATankPawn::GetPlayerController() const

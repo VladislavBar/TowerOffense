@@ -14,6 +14,13 @@ class TOWEROFFENSE_API ATurretPawn : public APawn
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UCapsuleComponent> NewRootComponent;
 
+	// The maximum speed at which the turret can rotate when it should almost instantly rotate to the target location (incl. multipliers)
+	UPROPERTY(EditAnywhere)
+	int MaxInstantRotationSpeed = 10;
+
+	UPROPERTY(EditAnywhere)
+	float RotationSpeedWhenTargetLocked = 10;
+
 protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> BaseMesh;
@@ -49,7 +56,7 @@ protected:
 public:
 	UFUNCTION(BlueprintCallable)
 	void Fire();
-	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location);
+	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
 	FRotator GetTurretMeshRotation() const;
 	FVector GetProjectileSpawnLocation() const;
 

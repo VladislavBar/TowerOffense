@@ -25,11 +25,11 @@ void UBTService_SetupEnemyTowerBlackboard::OnSearchStart(FBehaviorTreeSearchData
 	const ATowerPawn* SelfTurret = Cast<ATowerPawn>(Controller->GetPawn());
 	if (!IsValid(SelfTurret)) return;
 
-	const AActor* PlayerPawn = GetPlayerPawn();
+	AActor* PlayerPawn = GetPlayerPawn();
 	if (!IsValid(PlayerPawn)) return;
 
 	Blackboard->SetValueAsVector("SelfTurretForwardVector", SelfTurret->GetActorLocation() + SelfTurret->GetTurretMeshRotation().Vector());
-	Blackboard->SetValueAsVector("TargetLocation", PlayerPawn->GetActorLocation());
+	Blackboard->SetValueAsObject("Target", PlayerPawn);
 }
 
 AActor* UBTService_SetupEnemyTowerBlackboard::GetPlayerPawn() const
