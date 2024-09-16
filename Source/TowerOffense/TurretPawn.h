@@ -51,7 +51,6 @@ private:
 protected:
 	UPROPERTY(EditAnywhere, Category = "Turret Rotation", meta = (ClampMin = "0.0"))
 	float RotationInterpExponent = 2.f;
-	float MeshDefaultRotationYaw = 90.f;
 
 public:
 	UFUNCTION(BlueprintCallable)

@@ -39,7 +39,6 @@ bool UBTDecorator_IsReachable::HasStraightView(const ATowerPawn* TowerPawn, cons
 	if (!IsValid(World)) return false;
 
 	FRotator ExpectedRotation = UKismetMathLibrary::FindLookAtRotation(TowerPawn->GetActorLocation(), Target->GetActorLocation());
-	TowerPawn->AdjustRotationToMeshRotationOffset(ExpectedRotation);
 	const FRotator CurrentRotation = TowerPawn->GetRelativeTurretMeshRotation();
 	const FVector ExpectedProjectileSpawnLocation = TowerPawn->GetActorLocation() + (ExpectedRotation - CurrentRotation).RotateVector(TowerPawn->GetRelativeProjectileSpawnLocation());
 

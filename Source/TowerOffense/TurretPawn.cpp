@@ -52,10 +52,6 @@ void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVe
 	if (!IsValid(TurretMesh)) return;
 	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
 	FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Location);
-
-	// That is needed in case when a TurretMesh is aligned by default in a different direction than the x-axis
-	// In the mesh provided, the turret mesh is aligned by default by the y-axis...
-	TargetRotation.Yaw -= MeshDefaultRotationYaw;
 	if (bInstantRotation)
 	{
 		float DeltaRotationYaw = TargetRotation.Yaw - CurrentRotation.Yaw;
@@ -82,10 +78,7 @@ void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVe
 FRotator ATurretPawn::GetTurretMeshRotation() const
 {
 	if (!IsValid(TurretMesh)) return FRotator::ZeroRotator;
-
-	FRotator Rotation = TurretMesh->GetComponentRotation();
-	Rotation.Yaw += MeshDefaultRotationYaw;
-	return Rotation;
+	return TurretMesh->GetComponentRotation();
 }
 
 FVector ATurretPawn::GetProjectileSpawnLocation() const

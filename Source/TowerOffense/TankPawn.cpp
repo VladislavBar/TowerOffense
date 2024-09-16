@@ -100,7 +100,7 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 	const float AccelerationProgress = FMath::Clamp(ActionData.GetElapsedTime() / AccelerationDuration, 0.f, 1.f);
 	const float AccelerationValue = FMath::InterpEaseIn(0.f, AccelerationDuration, AccelerationProgress,
 		AccelerationExponent);
-	AddActorLocalOffset(FVector(0.f, Speed * AccelerationValue * AxisValue, 0.f), true);
+	AddActorLocalOffset(FVector(Speed * AccelerationValue * AxisValue, 0.f, 0.f), true);
 }
 
 void ATankPawn::Turn(const FInputActionInstance& ActionData)
@@ -117,9 +117,10 @@ void ATankPawn::RotateCamera(const FInputActionInstance& ActionData)
 	if (!IsValid(PlayerController) || PlayerController->bShowMouseCursor) return;
 
 	const FVector2D RotationVector2D = ActionData.GetValue().Get<FVector2D>();
-	const FVector RotationVector = FVector(0.f, 0.f, RotationVector2D.X);
-
-	SpringArm->AddWorldRotation(FRotator::MakeFromEuler(RotationVector));
+	const FVector RotationVector = FVector(0.f, RotationVector2D.Y, RotationVector2D.X);
+	FRotator NewRotation = SpringArm->GetRelativeRotation() + FRotator::MakeFromEuler(RotationVector);
+	NewRotation.Pitch = FMath::ClampAngle(NewRotation.Pitch, MinPitch, MaxPitch);
+	SpringArm->SetRelativeRotation(NewRotation);
 }
 
 void ATankPawn::ToggleAutoTarget()
@@ -186,26 +187,10 @@ void ATankPawn::RotateTurretMeshByCursor(const float DeltaSeconds)
 	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Red, false, 0.f);
 }
 
-void ATankPawn::ResetCursorPositionWhenRotating()
-{
-	APlayerController* PlayerController = GetPlayerController();
-	if (!IsValid(PlayerController) || PlayerController->bShowMouseCursor) return;
-
-	int32 ViewportWidth = 0;
-	int32 ViewportHeight = 0;
-	PlayerController->GetViewportSize(ViewportWidth, ViewportHeight);
-
-	FVector2D MousePosition = FVector2D::ZeroVector;
-	PlayerController->GetMousePosition(MousePosition.X, MousePosition.Y);
-
-	PlayerController->SetMouseLocation(ViewportWidth / 2, MousePosition.Y);
-}
-
 void ATankPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	RotateTurretMeshByCursor(DeltaSeconds);
-	ResetCursorPositionWhenRotating();
 }
 
 void ATankPawn::BeginPlay()

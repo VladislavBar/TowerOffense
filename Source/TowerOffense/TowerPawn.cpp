@@ -23,8 +23,3 @@ FRotator ATowerPawn::GetRelativeTurretMeshRotation() const
 {
 	return TurretMesh->GetRelativeRotation();
 }
-
-void ATowerPawn::AdjustRotationToMeshRotationOffset(FRotator& Rotation) const
-{
-	Rotation = FRotator(0.f, Rotation.Yaw - MeshDefaultRotationYaw, 0.f);
-}
