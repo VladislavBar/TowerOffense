@@ -14,6 +14,13 @@ class TOWEROFFENSE_API ATurretPawn : public APawn
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UCapsuleComponent> NewRootComponent;
 
+	// The maximum speed at which the turret can rotate when it should almost instantly rotate to the target location (incl. multipliers)
+	UPROPERTY(EditAnywhere)
+	int32 MaxInstantRotationSpeed = 10;
+
+	UPROPERTY(EditAnywhere)
+	float RotationSpeedWhenTargetLocked = 10.f;
+
 protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> BaseMesh;
@@ -21,12 +28,12 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> TurretMesh;
 
-	bool bLockTarget = false;
-
-private:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<USceneComponent> ProjectileSpawnPoint;
 
+	bool bLockTarget = false;
+
+private:
 	UPROPERTY(EditAnywhere, meta = (GetOptions = "GetMaterialTeamColorSlotNames"))
 	FName MaterialTeamColorSlotName;
 
@@ -41,13 +48,19 @@ private:
 
 	FVector TargetLocation = FVector::ZeroVector;
 
+protected:
 	UPROPERTY(EditAnywhere, Category = "Turret Rotation", meta = (ClampMin = "0.0"))
-	float RotationSpeed = 2.f;
-	float MeshDefaultRotationYaw = 90.f;
+	float RotationInterpExponent = 2.f;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void Fire();
+	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
+	FRotator GetTurretMeshRotation() const;
+	FVector GetProjectileSpawnLocation() const;
 
 protected:
 	void SetTargetLocation(const FVector& Location);
-	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location);
 	virtual void Tick(float DeltaSeconds) override;
 
 private:

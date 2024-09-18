@@ -42,21 +42,43 @@ void ATurretPawn::RotateTurretMesh(const float DeltaSeconds)
 	return RotateTurretMeshToLocation(DeltaSeconds, TargetLocation);
 }
 
-void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location)
+void ATurretPawn::Fire()
 {
-	if(!IsValid(TurretMesh)) return;
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Fire!"));
+}
+
+void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
+{
+	if (!IsValid(TurretMesh)) return;
 	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
-	FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Location);
+	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Location);
+	if (bInstantRotation)
+	{
+		const float DeltaRotationYaw = FRotator::NormalizeAxis(TargetRotation.Yaw - CurrentRotation.Yaw);
+		const float YawOffset = FMath::Clamp(DeltaRotationYaw * DeltaSeconds * RotationSpeedWhenTargetLocked, -MaxInstantRotationSpeed, MaxInstantRotationSpeed);
+		const FRotator RotationOffset = FRotator(0, YawOffset, 0);
+		TurretMesh->AddWorldRotation(RotationOffset);
+		
+		return;
+	}
 
-	// That is needed in case when a TurretMesh is aligned by default in a different direction than the x-axis
-	// In the mesh provided, the turret mesh is aligned by default by the y-axis...
-	TargetRotation.Yaw -= MeshDefaultRotationYaw;
-
-	FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaSeconds, RotationSpeed);
+	FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaSeconds, RotationInterpExponent);
 	NewRotation.Roll = 0.f;
 	NewRotation.Pitch = 0.f;
 
 	TurretMesh->SetWorldRotation(NewRotation);
+}
+
+FRotator ATurretPawn::GetTurretMeshRotation() const
+{
+	if (!IsValid(TurretMesh)) return FRotator::ZeroRotator;
+	return TurretMesh->GetComponentRotation();
+}
+
+FVector ATurretPawn::GetProjectileSpawnLocation() const
+{
+	if (!IsValid(ProjectileSpawnPoint)) return FVector::ZeroVector;
+	return ProjectileSpawnPoint->GetComponentLocation();
 }
 
 void ATurretPawn::SetTargetLocation(const FVector& Location)

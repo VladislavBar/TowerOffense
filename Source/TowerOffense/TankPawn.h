@@ -10,13 +10,14 @@
 #include "TankPawn.generated.h"
 
 UCLASS()
-class TOWEROFFENSE_API ATankPawn : public ATurretPawn {
+class TOWEROFFENSE_API ATankPawn : public ATurretPawn
+{
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<USpringArmComponent> SpringArm;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditAnywhere, Category = "Tank|Camera")
 	TObjectPtr<UCameraComponent> Camera;
 
 	UPROPERTY(EditDefaultsOnly)
@@ -52,7 +53,15 @@ class TOWEROFFENSE_API ATankPawn : public ATurretPawn {
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement")
 	float RotationRate = 2.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Tank|Camera")
+	float MinPitch = 70.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tank|Camera")
+	float MaxPitch = 90.f;
+
 private:
+	APlayerController* GetPlayerController() const;
+	
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	void SetupActions(UInputComponent* PlayerInputComponent);
 	void SetupInputContext();
@@ -66,13 +75,9 @@ private:
 	void FindAndLockTarget();
 	void FindTarget(const APlayerController* PlayerController, FHitResult& HitResultOut) const;
 	void RotateTurretMeshByCursor(const float DeltaSeconds);
-	void ResetCursorPositionWhenRotating();
 
-	UFUNCTION(BlueprintCallable)
-	void Fire();
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
-	APlayerController* GetPlayerController() const;
 
 public:
 	ATankPawn();

@@ -53,18 +53,6 @@ void ATankPawn::SetupActions(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(SetTargetAction, ETriggerEvent::Started, this,
 			&ATankPawn::ToggleAutoTarget);
 	}
-
-	if (IsValid(ToggleCursorAction))
-	{
-		EnhancedInputComponent->BindAction(ToggleCursorAction, ETriggerEvent::Started, this,
-			&ATankPawn::HideCursor);
-	}
-
-	if (IsValid(ToggleCursorAction))
-	{
-		EnhancedInputComponent->BindAction(ToggleCursorAction, ETriggerEvent::Completed, this,
-			&ATankPawn::ShowCursor);
-	}
 }
 
 void ATankPawn::SetupInputContext()
@@ -112,7 +100,7 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 	const float AccelerationProgress = FMath::Clamp(ActionData.GetElapsedTime() / AccelerationDuration, 0.f, 1.f);
 	const float AccelerationValue = FMath::InterpEaseIn(0.f, AccelerationDuration, AccelerationProgress,
 		AccelerationExponent);
-	AddActorLocalOffset(FVector(0.f, Speed * AccelerationValue * AxisValue, 0.f), true);
+	AddActorLocalOffset(FVector(Speed * AccelerationValue * AxisValue, 0.f, 0.f), true);
 }
 
 void ATankPawn::Turn(const FInputActionInstance& ActionData)
@@ -124,14 +112,15 @@ void ATankPawn::Turn(const FInputActionInstance& ActionData)
 void ATankPawn::RotateCamera(const FInputActionInstance& ActionData)
 {
 	if (!IsValid(SpringArm)) return;
-	
+
 	const APlayerController* PlayerController = GetPlayerController();
 	if (!IsValid(PlayerController) || PlayerController->bShowMouseCursor) return;
 
 	const FVector2D RotationVector2D = ActionData.GetValue().Get<FVector2D>();
-	const FVector RotationVector = FVector(0.f, 0.f, RotationVector2D.X);
-
-	SpringArm->AddWorldRotation(FRotator::MakeFromEuler(RotationVector));
+	const FVector RotationVector = FVector(0.f, RotationVector2D.Y, RotationVector2D.X);
+	FRotator NewRotation = SpringArm->GetRelativeRotation() + FRotator::MakeFromEuler(RotationVector);
+	NewRotation.Pitch = FMath::ClampAngle(NewRotation.Pitch, MinPitch, MaxPitch);
+	SpringArm->SetRelativeRotation(NewRotation);
 }
 
 void ATankPawn::ToggleAutoTarget()
@@ -191,37 +180,24 @@ void ATankPawn::RotateTurretMeshByCursor(const float DeltaSeconds)
 	FHitResult HitResult;
 	FindTarget(PlayerController, HitResult);
 	RotateTurretMeshToLocation(DeltaSeconds, HitResult.Location);
-	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Red, false, 5.f);
-}
 
-void ATankPawn::ResetCursorPositionWhenRotating()
-{
-	APlayerController* PlayerController = GetPlayerController();
-	if (!IsValid(PlayerController) || PlayerController->bShowMouseCursor) return;
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
 
-	int32 ViewportWidth = 0;
-	int32 ViewportHeight = 0;
-
-	PlayerController->GetViewportSize(ViewportWidth, ViewportHeight);
-	PlayerController->SetMouseLocation(ViewportWidth / 2, ViewportHeight / 2);
-}
-
-void ATankPawn::Fire()
-{
+	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Red, false, 0.f);
 }
 
 void ATankPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	RotateTurretMeshByCursor(DeltaSeconds);
-	ResetCursorPositionWhenRotating();
 }
 
 void ATankPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ShowCursor();
+	HideCursor();
 }
 
 APlayerController* ATankPawn::GetPlayerController() const
