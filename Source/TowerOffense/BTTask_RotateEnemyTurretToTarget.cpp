@@ -33,7 +33,7 @@ void UBTTask_RotateEnemyTurretToTarget::TickTask(UBehaviorTreeComponent& OwnerCo
 	const ATankPawn* Target = Cast<ATankPawn>(Blackboard->GetValueAsObject("Target"));
 	SelfTurret->RotateTurretMeshToLocation(DeltaSeconds, Target->GetActorLocation(), true);
 
-	if (PreviousSelfRotation.Equals(SelfTurret->GetTurretMeshRotation(), 0.1f))
+	if (PreviousSelfRotation.Equals(SelfTurret->GetTurretMeshRotation(), RotationTolerance))
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
@@ -41,5 +41,5 @@ void UBTTask_RotateEnemyTurretToTarget::TickTask(UBehaviorTreeComponent& OwnerCo
 
 FString UBTTask_RotateEnemyTurretToTarget::GetStaticDescription() const
 {
-	return FString::Printf(TEXT("Rotate this EnemyTurret to the TargetLocation"));
+	return FString::Printf(TEXT("Rotate this EnemyTurret to the TargetLocation with a tolerance of %f."), RotationTolerance);
 }

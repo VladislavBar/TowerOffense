@@ -1,10 +1,21 @@
 #include "TankPlayerController.h"
 
+DEFINE_LOG_CATEGORY(LogTankPawn)
+
 void ATankPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (!IsValid(CrosshairWidgetClass)) return;
+	if (!IsValid(CrosshairWidgetClass))
+	{
+		UE_LOG(LogTankPawn, Error, TEXT("CrosshairWidgetClass is not set in %s"), *GetName());
+
+		if(!IsValid(GEngine)) return;
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CrosshairWidgetClass is not set in TankPlayerController"));
+		
+		return;
+	}
+	
 	CrosshairWidget = CreateWidget<UCrosshairWidget>(this, CrosshairWidgetClass);
 	CrosshairWidget->AddToViewport();
 }

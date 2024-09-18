@@ -60,6 +60,8 @@ class TOWEROFFENSE_API ATankPawn : public ATurretPawn
 	float MaxPitch = 90.f;
 
 private:
+	APlayerController* GetPlayerController() const;
+	
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	void SetupActions(UInputComponent* PlayerInputComponent);
 	void SetupInputContext();
@@ -76,7 +78,6 @@ private:
 
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
-	APlayerController* GetPlayerController() const;
 
 public:
 	ATankPawn();

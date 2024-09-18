@@ -16,10 +16,10 @@ class TOWEROFFENSE_API ATurretPawn : public APawn
 
 	// The maximum speed at which the turret can rotate when it should almost instantly rotate to the target location (incl. multipliers)
 	UPROPERTY(EditAnywhere)
-	int MaxInstantRotationSpeed = 10;
+	int32 MaxInstantRotationSpeed = 10;
 
 	UPROPERTY(EditAnywhere)
-	float RotationSpeedWhenTargetLocked = 10;
+	float RotationSpeedWhenTargetLocked = 10.f;
 
 protected:
 	UPROPERTY(EditAnywhere)

@@ -51,20 +51,14 @@ void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVe
 {
 	if (!IsValid(TurretMesh)) return;
 	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
-	FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Location);
+	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Location);
 	if (bInstantRotation)
 	{
-		float DeltaRotationYaw = TargetRotation.Yaw - CurrentRotation.Yaw;
-		if (DeltaRotationYaw > 180)
-		{
-			DeltaRotationYaw -= 360;
-		}
-		else if (DeltaRotationYaw < -180)
-		{
-			DeltaRotationYaw += 360;
-		}
-
-		TurretMesh->AddWorldRotation(FRotator(0, FMath::Clamp(DeltaRotationYaw * DeltaSeconds * RotationSpeedWhenTargetLocked, -MaxInstantRotationSpeed, MaxInstantRotationSpeed), 0));
+		const float DeltaRotationYaw = FRotator::NormalizeAxis(TargetRotation.Yaw - CurrentRotation.Yaw);
+		const float YawOffset = FMath::Clamp(DeltaRotationYaw * DeltaSeconds * RotationSpeedWhenTargetLocked, -MaxInstantRotationSpeed, MaxInstantRotationSpeed);
+		const FRotator RotationOffset = FRotator(0, YawOffset, 0);
+		TurretMesh->AddWorldRotation(RotationOffset);
+		
 		return;
 	}
 

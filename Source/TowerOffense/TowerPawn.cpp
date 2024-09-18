@@ -13,7 +13,7 @@ void ATowerPawn::RotateByYaw(const float Yaw)
 
 FVector ATowerPawn::GetRelativeProjectileSpawnLocation() const
 {
-	if (!IsValid(ProjectileSpawnPoint)) return FVector::ZeroVector;
+	if (!IsValid(ProjectileSpawnPoint) || !IsValid(TurretMesh)) return FVector::ZeroVector;
 
 	const FRotator TurretMeshRotation = TurretMesh->GetRelativeRotation();
 	return TurretMeshRotation.RotateVector(ProjectileSpawnPoint->GetRelativeLocation());
@@ -21,5 +21,7 @@ FVector ATowerPawn::GetRelativeProjectileSpawnLocation() const
 
 FRotator ATowerPawn::GetRelativeTurretMeshRotation() const
 {
+	if(!IsValid(TurretMesh)) return FRotator::ZeroRotator;
+	
 	return TurretMesh->GetRelativeRotation();
 }

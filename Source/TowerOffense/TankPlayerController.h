@@ -5,6 +5,8 @@
 #include "GameFramework/PlayerController.h"
 #include "TankPlayerController.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogTankPawn, Log, All);
+
 UCLASS()
 class TOWEROFFENSE_API ATankPlayerController : public APlayerController
 {

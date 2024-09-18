@@ -15,7 +15,8 @@ private:
 	bool bRotateClockwise = true;
 
 public:
-	void RotateByYaw(const float Yaw);
 	FVector GetRelativeProjectileSpawnLocation() const;
 	FRotator GetRelativeTurretMeshRotation() const;
+	
+	void RotateByYaw(const float Yaw);
 };
