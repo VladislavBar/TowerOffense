@@ -60,7 +60,10 @@ void ATurretPawn::Fire()
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.Owner = this;
 
-	World->SpawnActor<AProjectile>(ProjectileClass, ProjectileSpawnPoint->GetComponentTransform(), SpawnParameters);
+	AProjectile* Projectile = World->SpawnActor<AProjectile>(ProjectileClass, ProjectileSpawnPoint->GetComponentTransform(), SpawnParameters);
+	if (!IsValid(Projectile)) return;
+
+	Projectile->SetProjectileSpeed(ProjectileSpeed);
 	DisableFire();
 }
 
@@ -111,7 +114,6 @@ void ATurretPawn::StartCooldownTimer()
 	if (!IsValid(World)) return;
 
 	World->GetTimerManager().SetTimer(FireCooldownTimerHandle, this, &ATurretPawn::EnableFire, FireCooldown, false);
-	
 }
 
 void ATurretPawn::DisableFire()

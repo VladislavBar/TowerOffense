@@ -55,11 +55,14 @@ private:
 	float ProjectileDebugSphereRadius = 10.f;
 	int32 ProjectileDebugSphereSegments = 12;
 	FColor ProjectileDebugSphereColor = FColor::Red;
-	
+
 	bool bCanFire = true;
 
 	UPROPERTY(EditAnywhere, Category = "Turret|Fire", meta = (ClampMin = "0.0"))
 	float FireCooldown = 5.f;
+
+	UPROPERTY(EditAnywhere, Category = "Turret|Fire", meta = (ClampMin = "0.0"))
+	float ProjectileSpeed = 7000.f;
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "Turret Rotation", meta = (ClampMin = "0.0"))
@@ -71,6 +74,7 @@ public:
 	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
 	FRotator GetTurretMeshRotation() const;
 	FVector GetProjectileSpawnLocation() const;
+	float GetProjectileSpeed() const { return ProjectileSpeed; }
 
 protected:
 	void SetTargetLocation(const FVector& Location);

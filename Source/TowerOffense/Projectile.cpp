@@ -10,6 +10,11 @@ AProjectile::AProjectile()
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
 }
 
+void AProjectile::SetProjectileSpeed(const float Speed)
+{
+	ProjectileMovementComponent->SetVelocityInLocalSpace(FVector(Speed, 0, 0));
+}
+
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
@@ -17,6 +22,7 @@ void AProjectile::BeginPlay()
 	SetLifeSpan(LifeSpan);
 	SetupIgnoreActors();
 }
+
 void AProjectile::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
 {
 	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);

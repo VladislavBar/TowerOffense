@@ -31,6 +31,7 @@ void ATankPawn::SetupActions(UInputComponent* PlayerInputComponent)
 	if (IsValid(MoveForwardAction))
 	{
 		EnhancedInputComponent->BindAction(MoveForwardAction, ETriggerEvent::Triggered, this, &ATankPawn::Move);
+		EnhancedInputComponent->BindAction(MoveForwardAction, ETriggerEvent::Completed, this, &ATankPawn::ResetAccelerationDurationElapsed);
 	}
 
 	if (IsValid(TurnRightAction))
@@ -90,7 +91,12 @@ void ATankPawn::HideCursor()
 
 void ATankPawn::Move(const FInputActionInstance& ActionData)
 {
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
 	const float AxisValue = ActionData.GetValue().Get<float>();
+	bIsMovingForward = AxisValue > 0.f;
+	AccelerationDurationElapsed = ActionData.GetElapsedTime();
 
 	if (AccelerationDuration <= KINDA_SMALL_NUMBER)
 	{
@@ -99,9 +105,9 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 	}
 
 	const float AccelerationProgress = FMath::Clamp(ActionData.GetElapsedTime() / AccelerationDuration, 0.f, 1.f);
-	const float AccelerationValue = FMath::InterpEaseIn(0.f, AccelerationDuration, AccelerationProgress,
+	const float AccelerationValue = FMath::InterpEaseIn(0.f, 1.f, AccelerationProgress,
 		AccelerationExponent);
-	AddActorLocalOffset(FVector(Speed * AccelerationValue * AxisValue, 0.f, 0.f), true);
+	AddActorLocalOffset(FVector(Speed * AccelerationValue * AxisValue * World->GetDeltaSeconds(), 0.f, 0.f), true);
 }
 
 void ATankPawn::Turn(const FInputActionInstance& ActionData)
@@ -192,12 +198,17 @@ void ATankPawn::RefreshCooldownWidget()
 {
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
-	
+
 	ATankPlayerController* PlayerController = Cast<ATankPlayerController>(World->GetFirstPlayerController());
 	if (!IsValid(PlayerController)) return;
 
 	const float RemainingCooldownTime = World->GetTimerManager().GetTimerRemaining(FireCooldownTimerHandle);
 	PlayerController->RefreshCooldownWidget(RemainingCooldownTime);
+}
+
+void ATankPawn::ResetAccelerationDurationElapsed()
+{
+	AccelerationDurationElapsed = 0.f;
 }
 
 void ATankPawn::Tick(float DeltaSeconds)

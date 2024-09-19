@@ -21,6 +21,7 @@ class TOWEROFFENSE_API AProjectile : public AActor
 
 public:
 	AProjectile();
+	void SetProjectileSpeed(float Speed);
 
 private:
 	virtual void BeginPlay() override;
