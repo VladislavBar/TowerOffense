@@ -5,8 +5,6 @@
 #include "Components/TextBlock.h"
 #include "CooldownWidget.generated.h"
 
-DECLARE_DELEGATE_OneParam(FUpdateTextDelegate, float);
-
 UCLASS()
 class TOWEROFFENSE_API UCooldownWidget : public UUserWidget
 {

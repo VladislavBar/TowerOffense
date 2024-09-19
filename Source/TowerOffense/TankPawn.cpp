@@ -103,7 +103,6 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 		LastDirectionChangedTime = AccelerationDurationElapsed;
 	}
 
-	GEngine->AddOnScreenDebugMessage(1, 99999.f, FColor::Red, FString::Printf(TEXT("LastDirectionChangedTime: %f"), LastDirectionChangedTime));
 	bIsMovingForward = AxisValue > 0.f;
 	if (AccelerationDuration <= KINDA_SMALL_NUMBER)
 	{
