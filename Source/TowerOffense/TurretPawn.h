@@ -2,6 +2,7 @@
 
 #include "Components/CapsuleComponent.h"
 #include "CoreMinimal.h"
+#include "Projectile.h"
 #include "GameFramework/Pawn.h"
 
 #include "TurretPawn.generated.h"
@@ -46,7 +47,13 @@ private:
 	UFUNCTION()
 	TArray<FName> GetMaterialTeamColorSlotNames() const;
 
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AProjectile> ProjectileClass;
+
 	FVector TargetLocation = FVector::ZeroVector;
+	float ProjectileDebugSphereRadius = 10.f;
+	int32 ProjectileDebugSphereSegments = 12;
+	FColor ProjectileDebugSphereColor = FColor::Red;
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "Turret Rotation", meta = (ClampMin = "0.0"))
@@ -67,6 +74,7 @@ private:
 	void SetupTeamColorDynamicMaterial(UStaticMeshComponent* Mesh);
 	virtual void PostInitializeComponents() override;
 	void RotateTurretMesh(const float DeltaSeconds);
+	void DrawDebugAtSpawnPointLocation() const;
 
 public:
 	ATurretPawn();

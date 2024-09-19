@@ -39,7 +39,7 @@ void ATankPawn::SetupActions(UInputComponent* PlayerInputComponent)
 
 	if (IsValid(FireAction))
 	{
-		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &ATankPawn::Fire);
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ATankPawn::Fire);
 	}
 
 	if (IsValid(RotateCameraAction))

@@ -16,7 +16,7 @@ ATurretPawn::ATurretPawn()
 	TurretMesh->SetupAttachment(RootComponent);
 
 	ProjectileSpawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("ProjectileSpawnPoint"));
-	ProjectileSpawnPoint->SetupAttachment(RootComponent);
+	ProjectileSpawnPoint->SetupAttachment(TurretMesh);
 }
 
 TArray<FName> ATurretPawn::GetMaterialTeamColorSlotNames() const
@@ -42,9 +42,22 @@ void ATurretPawn::RotateTurretMesh(const float DeltaSeconds)
 	return RotateTurretMeshToLocation(DeltaSeconds, TargetLocation);
 }
 
+void ATurretPawn::DrawDebugAtSpawnPointLocation() const
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	DrawDebugSphere(World, GetProjectileSpawnLocation(), ProjectileDebugSphereRadius, ProjectileDebugSphereSegments, ProjectileDebugSphereColor);
+}
+
 void ATurretPawn::Fire()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Fire!"));
+	if(!IsValid(ProjectileClass) || !IsValid(ProjectileSpawnPoint)) return;
+
+	UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	World->SpawnActor<AProjectile>(ProjectileClass, ProjectileSpawnPoint->GetComponentTransform());
 }
 
 void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
@@ -58,7 +71,7 @@ void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVe
 		const float YawOffset = FMath::Clamp(DeltaRotationYaw * DeltaSeconds * RotationSpeedWhenTargetLocked, -MaxInstantRotationSpeed, MaxInstantRotationSpeed);
 		const FRotator RotationOffset = FRotator(0, YawOffset, 0);
 		TurretMesh->AddWorldRotation(RotationOffset);
-		
+
 		return;
 	}
 
@@ -113,4 +126,5 @@ void ATurretPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	RotateTurretMesh(DeltaSeconds);
+	DrawDebugAtSpawnPointLocation();
 }
