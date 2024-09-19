@@ -63,7 +63,9 @@ class TOWEROFFENSE_API ATankPawn : public ATurretPawn
 
 public:
 	float GetSpeed() const { return Speed; }
+	float GetAccelerationDuration() const { return AccelerationDuration; }
 	float GetAccelerationDurationElapsed() const { return AccelerationDurationElapsed; }
+
 	bool IsMovingForward() const { return bIsMovingForward; }
 
 private:

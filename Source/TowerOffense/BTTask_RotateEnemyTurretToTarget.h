@@ -17,6 +17,9 @@ class TOWEROFFENSE_API UBTTask_RotateEnemyTurretToTarget : public UBTTask_Blackb
 private:
 	UPROPERTY(EditAnywhere)
 	float RotationTolerance = 0.1f;
+
+	UPROPERTY(EditAnywhere)
+	float StartPredictingLocationAtAccelerationProgress = 0.5f;
 	FRotator PreviousSelfRotation;
 	FVector PredictedLocation;
 
