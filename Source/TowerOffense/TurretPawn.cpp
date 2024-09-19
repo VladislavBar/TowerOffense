@@ -74,8 +74,9 @@ void ATurretPawn::RotateWithoutInterp(const FVector& CurrentTargetLocation, cons
 	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
 	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CurrentTargetLocation);
 	const float DeltaRotationYaw = FRotator::NormalizeAxis(TargetRotation.Yaw - CurrentRotation.Yaw);
-	const float YawOffset = FMath::Clamp(DeltaRotationYaw * DeltaSeconds * RotationSpeedWhenTargetLocked, -MaxInstantRotationSpeed, MaxInstantRotationSpeed);
-	const FRotator RotationOffset = FRotator(0, YawOffset, 0);
+	const float YawOffset = DeltaRotationYaw * DeltaSeconds * RotationSpeedWhenTargetLocked;
+	const float YawOffsetClamped = FMath::Clamp(YawOffset, -MaxInstantRotationSpeed, MaxInstantRotationSpeed);
+	const FRotator RotationOffset = FRotator(0, YawOffsetClamped, 0);
 
 	TurretMesh->AddWorldRotation(RotationOffset);
 	SetSpawnPointRotationAtLocation(CurrentTargetLocation);
