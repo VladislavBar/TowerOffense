@@ -52,7 +52,7 @@ void ATurretPawn::DrawDebugAtSpawnPointLocation() const
 
 void ATurretPawn::Fire()
 {
-	if(!IsValid(ProjectileClass) || !IsValid(ProjectileSpawnPoint)) return;
+	if (!IsValid(ProjectileClass) || !IsValid(ProjectileSpawnPoint)) return;
 
 	UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
@@ -60,26 +60,53 @@ void ATurretPawn::Fire()
 	World->SpawnActor<AProjectile>(ProjectileClass, ProjectileSpawnPoint->GetComponentTransform());
 }
 
-void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
+void ATurretPawn::RotateWithoutInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds)
 {
 	if (!IsValid(TurretMesh)) return;
-	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
-	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Location);
-	if (bInstantRotation)
-	{
-		const float DeltaRotationYaw = FRotator::NormalizeAxis(TargetRotation.Yaw - CurrentRotation.Yaw);
-		const float YawOffset = FMath::Clamp(DeltaRotationYaw * DeltaSeconds * RotationSpeedWhenTargetLocked, -MaxInstantRotationSpeed, MaxInstantRotationSpeed);
-		const FRotator RotationOffset = FRotator(0, YawOffset, 0);
-		TurretMesh->AddWorldRotation(RotationOffset);
 
-		return;
-	}
+	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
+	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CurrentTargetLocation);
+	const float DeltaRotationYaw = FRotator::NormalizeAxis(TargetRotation.Yaw - CurrentRotation.Yaw);
+	const float YawOffset = FMath::Clamp(DeltaRotationYaw * DeltaSeconds * RotationSpeedWhenTargetLocked, -MaxInstantRotationSpeed, MaxInstantRotationSpeed);
+	const FRotator RotationOffset = FRotator(0, YawOffset, 0);
+
+	TurretMesh->AddWorldRotation(RotationOffset);
+	SetSpawnPointRotationAtLocation(CurrentTargetLocation);
+}
+
+void ATurretPawn::RotateWithInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds)
+{
+	if (!IsValid(TurretMesh)) return;
+
+	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
+	const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CurrentTargetLocation);
 
 	FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaSeconds, RotationInterpExponent);
 	NewRotation.Roll = 0.f;
 	NewRotation.Pitch = 0.f;
 
 	TurretMesh->SetWorldRotation(NewRotation);
+	SetSpawnPointRotationAtLocation(CurrentTargetLocation);
+}
+
+void ATurretPawn::SetSpawnPointRotationAtLocation(const FVector& CurrentTargetLocation)
+{
+	if(!IsValid(ProjectileSpawnPoint)) return;
+	
+	const FRotator CurrentRotation = ProjectileSpawnPoint->GetComponentRotation();
+	FRotator NewBulletSpawnTargetRotation = UKismetMathLibrary::FindLookAtRotation(GetProjectileSpawnLocation(), CurrentTargetLocation);
+	NewBulletSpawnTargetRotation.Roll = CurrentRotation.Roll;
+	NewBulletSpawnTargetRotation.Yaw = CurrentRotation.Yaw;
+	
+	ProjectileSpawnPoint->SetWorldRotation(NewBulletSpawnTargetRotation);
+}
+
+void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
+{
+	if (!IsValid(TurretMesh)) return;
+	if (bInstantRotation) return RotateWithoutInterp(Location, DeltaSeconds);
+	
+	return RotateWithInterp(Location, DeltaSeconds);
 }
 
 FRotator ATurretPawn::GetTurretMeshRotation() const

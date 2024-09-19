@@ -75,6 +75,9 @@ private:
 	virtual void PostInitializeComponents() override;
 	void RotateTurretMesh(const float DeltaSeconds);
 	void DrawDebugAtSpawnPointLocation() const;
+	void RotateWithoutInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds);
+	void RotateWithInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds);
+	void SetSpawnPointRotationAtLocation(const FVector& CurrentTargetLocation);
 
 public:
 	ATurretPawn();
