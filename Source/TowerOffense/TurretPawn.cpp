@@ -52,7 +52,7 @@ void ATurretPawn::DrawDebugAtSpawnPointLocation() const
 
 void ATurretPawn::Fire()
 {
-	if (!IsValid(ProjectileClass) || !IsValid(ProjectileSpawnPoint)) return;
+	if (!bCanFire || !IsValid(ProjectileClass) || !IsValid(ProjectileSpawnPoint)) return;
 
 	UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
@@ -61,6 +61,7 @@ void ATurretPawn::Fire()
 	SpawnParameters.Owner = this;
 
 	World->SpawnActor<AProjectile>(ProjectileClass, ProjectileSpawnPoint->GetComponentTransform(), SpawnParameters);
+	DisableFire();
 }
 
 void ATurretPawn::RotateWithoutInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds)
@@ -102,6 +103,26 @@ void ATurretPawn::SetSpawnPointRotationAtLocation(const FVector& CurrentTargetLo
 	NewBulletSpawnTargetRotation.Yaw = CurrentRotation.Yaw;
 
 	ProjectileSpawnPoint->SetWorldRotation(NewBulletSpawnTargetRotation);
+}
+
+void ATurretPawn::StartCooldownTimer()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	World->GetTimerManager().SetTimer(FireCooldownTimerHandle, this, &ATurretPawn::EnableFire, FireCooldown, false);
+	
+}
+
+void ATurretPawn::DisableFire()
+{
+	bCanFire = false;
+	StartCooldownTimer();
+}
+
+void ATurretPawn::EnableFire()
+{
+	bCanFire = true;
 }
 
 void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)

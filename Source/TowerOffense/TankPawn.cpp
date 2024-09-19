@@ -2,6 +2,7 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "TankPlayerController.h"
 
 ATankPawn::ATankPawn()
 {
@@ -187,10 +188,23 @@ void ATankPawn::RotateTurretMeshByCursor(const float DeltaSeconds)
 	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Red, false, 0.f);
 }
 
+void ATankPawn::RefreshCooldownWidget()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+	
+	ATankPlayerController* PlayerController = Cast<ATankPlayerController>(World->GetFirstPlayerController());
+	if (!IsValid(PlayerController)) return;
+
+	const float RemainingCooldownTime = World->GetTimerManager().GetTimerRemaining(FireCooldownTimerHandle);
+	PlayerController->RefreshCooldownWidget(RemainingCooldownTime);
+}
+
 void ATankPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	RotateTurretMeshByCursor(DeltaSeconds);
+	RefreshCooldownWidget();
 }
 
 void ATankPawn::BeginPlay()

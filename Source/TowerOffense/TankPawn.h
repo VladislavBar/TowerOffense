@@ -75,6 +75,7 @@ private:
 	void FindAndLockTarget();
 	void FindTarget(const APlayerController* PlayerController, FHitResult& HitResultOut) const;
 	void RotateTurretMeshByCursor(const float DeltaSeconds);
+	void RefreshCooldownWidget();
 
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;

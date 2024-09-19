@@ -33,6 +33,7 @@ protected:
 	TObjectPtr<USceneComponent> ProjectileSpawnPoint;
 
 	bool bLockTarget = false;
+	FTimerHandle FireCooldownTimerHandle;
 
 private:
 	UPROPERTY(EditAnywhere, meta = (GetOptions = "GetMaterialTeamColorSlotNames"))
@@ -54,6 +55,11 @@ private:
 	float ProjectileDebugSphereRadius = 10.f;
 	int32 ProjectileDebugSphereSegments = 12;
 	FColor ProjectileDebugSphereColor = FColor::Red;
+	
+	bool bCanFire = true;
+
+	UPROPERTY(EditAnywhere, Category = "Turret|Fire", meta = (ClampMin = "0.0"))
+	float FireCooldown = 5.f;
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "Turret Rotation", meta = (ClampMin = "0.0"))
@@ -78,6 +84,9 @@ private:
 	void RotateWithoutInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds);
 	void RotateWithInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds);
 	void SetSpawnPointRotationAtLocation(const FVector& CurrentTargetLocation);
+	void StartCooldownTimer();
+	void DisableFire();
+	void EnableFire();
 
 public:
 	ATurretPawn();
