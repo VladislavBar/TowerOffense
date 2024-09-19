@@ -57,7 +57,10 @@ void ATurretPawn::Fire()
 	UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	World->SpawnActor<AProjectile>(ProjectileClass, ProjectileSpawnPoint->GetComponentTransform());
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = this;
+
+	World->SpawnActor<AProjectile>(ProjectileClass, ProjectileSpawnPoint->GetComponentTransform(), SpawnParameters);
 }
 
 void ATurretPawn::RotateWithoutInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds)
@@ -91,13 +94,13 @@ void ATurretPawn::RotateWithInterp(const FVector& CurrentTargetLocation, const f
 
 void ATurretPawn::SetSpawnPointRotationAtLocation(const FVector& CurrentTargetLocation)
 {
-	if(!IsValid(ProjectileSpawnPoint)) return;
-	
+	if (!IsValid(ProjectileSpawnPoint)) return;
+
 	const FRotator CurrentRotation = ProjectileSpawnPoint->GetComponentRotation();
 	FRotator NewBulletSpawnTargetRotation = UKismetMathLibrary::FindLookAtRotation(GetProjectileSpawnLocation(), CurrentTargetLocation);
 	NewBulletSpawnTargetRotation.Roll = CurrentRotation.Roll;
 	NewBulletSpawnTargetRotation.Yaw = CurrentRotation.Yaw;
-	
+
 	ProjectileSpawnPoint->SetWorldRotation(NewBulletSpawnTargetRotation);
 }
 
@@ -105,7 +108,7 @@ void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVe
 {
 	if (!IsValid(TurretMesh)) return;
 	if (bInstantRotation) return RotateWithoutInterp(Location, DeltaSeconds);
-	
+
 	return RotateWithInterp(Location, DeltaSeconds);
 }
 
