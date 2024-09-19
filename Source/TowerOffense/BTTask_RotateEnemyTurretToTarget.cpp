@@ -48,7 +48,7 @@ FVector UBTTask_RotateEnemyTurretToTarget::PredictTargetLocation(const ATurretPa
 	const FVector TargetForwardVector = Target->GetActorForwardVector();
 	const float TimeToReachTarget = FVector::Distance(TargetLocation, Self->GetActorLocation()) / Self->GetProjectileSpeed();
 
-	const float AccelerationElapsedTime = Target->GetAccelerationDurationElapsed();
+	const float AccelerationElapsedTime = Target->GetElapsedTimeSinceLastDirectionChange();
 	const float AccelerationDuration = Target->GetAccelerationDuration();
 	if (AccelerationElapsedTime <= KINDA_SMALL_NUMBER || AccelerationElapsedTime <= AccelerationDuration * StartPredictingLocationAtAccelerationProgress)
 	{

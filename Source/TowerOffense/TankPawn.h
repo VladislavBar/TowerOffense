@@ -51,6 +51,7 @@ class TOWEROFFENSE_API ATankPawn : public ATurretPawn
 	float Speed = 5.f;
 	float AccelerationDurationElapsed = 0.f;
 	bool bIsMovingForward = false;
+	float LastDirectionChangedTime = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement")
 	float RotationRate = 2.f;
@@ -64,7 +65,7 @@ class TOWEROFFENSE_API ATankPawn : public ATurretPawn
 public:
 	float GetSpeed() const { return Speed; }
 	float GetAccelerationDuration() const { return AccelerationDuration; }
-	float GetAccelerationDurationElapsed() const { return AccelerationDurationElapsed; }
+	float GetElapsedTimeSinceLastDirectionChange() const { return AccelerationDurationElapsed - LastDirectionChangedTime; }
 
 	bool IsMovingForward() const { return bIsMovingForward; }
 

@@ -95,16 +95,23 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 	if (!IsValid(World)) return;
 
 	const float AxisValue = ActionData.GetValue().Get<float>();
-	bIsMovingForward = AxisValue > 0.f;
+
 	AccelerationDurationElapsed = ActionData.GetElapsedTime();
 
+	if(bIsMovingForward && AxisValue < 0.f || !bIsMovingForward && AxisValue > 0.f)
+	{
+		LastDirectionChangedTime = AccelerationDurationElapsed;
+	}
+
+	GEngine->AddOnScreenDebugMessage(1, 99999.f, FColor::Red, FString::Printf(TEXT("LastDirectionChangedTime: %f"), LastDirectionChangedTime));
+	bIsMovingForward = AxisValue > 0.f;
 	if (AccelerationDuration <= KINDA_SMALL_NUMBER)
 	{
 		AddActorLocalOffset(FVector(Speed * AxisValue, 0.f, 0.f));
 		return;
 	}
 
-	const float AccelerationProgress = FMath::Clamp(ActionData.GetElapsedTime() / AccelerationDuration, 0.f, 1.f);
+	const float AccelerationProgress = FMath::Clamp((ActionData.GetElapsedTime() - LastDirectionChangedTime) / AccelerationDuration, 0.f, 1.f);
 	const float AccelerationValue = FMath::InterpEaseIn(0.f, 1.f, AccelerationProgress,
 		AccelerationExponent);
 	AddActorLocalOffset(FVector(Speed * AccelerationValue * AxisValue * World->GetDeltaSeconds(), 0.f, 0.f), true);
@@ -209,6 +216,7 @@ void ATankPawn::RefreshCooldownWidget()
 void ATankPawn::ResetAccelerationDurationElapsed()
 {
 	AccelerationDurationElapsed = 0.f;
+	LastDirectionChangedTime = 0.f;
 }
 
 void ATankPawn::Tick(float DeltaSeconds)
