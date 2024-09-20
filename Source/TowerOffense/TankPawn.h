@@ -49,6 +49,9 @@ class TOWEROFFENSE_API ATankPawn : public ATurretPawn
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement", meta = (ClampMin = "0.0"))
 	float Speed = 5.f;
+	float AccelerationDurationElapsed = 0.f;
+	bool bIsMovingForward = false;
+	float LastDirectionChangedTime = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement")
 	float RotationRate = 2.f;
@@ -59,9 +62,16 @@ class TOWEROFFENSE_API ATankPawn : public ATurretPawn
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Camera")
 	float MaxPitch = 90.f;
 
+public:
+	float GetSpeed() const { return Speed; }
+	float GetAccelerationDuration() const { return AccelerationDuration; }
+	float GetElapsedTimeSinceLastDirectionChange() const { return AccelerationDurationElapsed - LastDirectionChangedTime; }
+
+	bool IsMovingForward() const { return bIsMovingForward; }
+
 private:
 	APlayerController* GetPlayerController() const;
-	
+
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	void SetupActions(UInputComponent* PlayerInputComponent);
 	void SetupInputContext();
@@ -75,6 +85,8 @@ private:
 	void FindAndLockTarget();
 	void FindTarget(const APlayerController* PlayerController, FHitResult& HitResultOut) const;
 	void RotateTurretMeshByCursor(const float DeltaSeconds);
+	void RefreshCooldownWidget();
+	void ResetAccelerationDurationElapsed();
 
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
