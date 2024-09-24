@@ -1,6 +1,8 @@
 #include "CooldownWidget.h"
 
-void UCooldownWidget::SetCooldownText(float RemainingCooldownTime)
+#include "TankPawn.h"
+
+void UCooldownWidget::SetCooldownText(const float RemainingCooldownTime)
 {
 	if (!IsValid(CooldownText)) return;
 
@@ -17,3 +19,17 @@ void UCooldownWidget::SetCooldownText(float RemainingCooldownTime)
 	}
 }
 
+void UCooldownWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	SetupOnCooldownTickDelegate();
+}
+
+void UCooldownWidget::SetupOnCooldownTickDelegate()
+{
+	ATankPawn* Owner = Cast<ATankPawn>(GetOwningPlayerPawn());
+	if (!IsValid(Owner)) return;
+
+	Owner->OnCooldownTickDelegate.AddUObject(this, &UCooldownWidget::SetCooldownText);
+}

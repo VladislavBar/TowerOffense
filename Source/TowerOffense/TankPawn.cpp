@@ -98,7 +98,7 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 
 	AccelerationDurationElapsed = ActionData.GetElapsedTime();
 
-	if(bIsMovingForward && AxisValue < 0.f || !bIsMovingForward && AxisValue > 0.f)
+	if (bIsMovingForward && AxisValue < 0.f || !bIsMovingForward && AxisValue > 0.f)
 	{
 		LastDirectionChangedTime = AccelerationDurationElapsed;
 	}
@@ -209,7 +209,7 @@ void ATankPawn::RefreshCooldownWidget()
 	if (!IsValid(PlayerController)) return;
 
 	const float RemainingCooldownTime = World->GetTimerManager().GetTimerRemaining(FireCooldownTimerHandle);
-	PlayerController->RefreshCooldownWidget(RemainingCooldownTime);
+	OnCooldownTickDelegate.Broadcast(RemainingCooldownTime);
 }
 
 void ATankPawn::ResetAccelerationDurationElapsed()

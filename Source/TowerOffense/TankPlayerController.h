@@ -1,8 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CooldownWidget.h"
-#include "CrosshairWidget.h"
+#include "TankPawnHUD.h"
 #include "GameFramework/PlayerController.h"
 #include "TankPlayerController.generated.h"
 
@@ -13,25 +12,15 @@ class TOWEROFFENSE_API ATankPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+private:
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<UCrosshairWidget> CrosshairWidgetClass;
+	TSubclassOf<UTankPawnHUD> TankPawnHUDClass;
 
 	UPROPERTY()
-	TObjectPtr<UCrosshairWidget> CrosshairWidget;
-	
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UCooldownWidget> CooldownWidgetClass;
-
-	UPROPERTY()
-	TObjectPtr<UCooldownWidget> CooldownWidget;
+	TObjectPtr<UTankPawnHUD> TankPawnHUD;
 
 	virtual void BeginPlay() override;
 	virtual void Tick(const float DeltaSeconds) override;
 	void ResetCursor();
-	void CrosshairFollowMouse();
-	void SetupCrosshairWidget();
-	void SetupCooldownWidget();
-
-public:
-	void RefreshCooldownWidget(float RemainingCooldownTime);
+	void SetupTankHUD();
 };
