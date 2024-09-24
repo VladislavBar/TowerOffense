@@ -10,9 +10,10 @@ AlignOperands: AlignAfterOperator
 AlignTrailingComments: true
 AllowShortBlocksOnASingleLine: Empty
 AllowShortEnumsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: true
 AllowShortLambdasOnASingleLine: Inline
+AlwaysBreakTemplateDeclarations: Yes
 BasedOnStyle: LLVM
 BraceWrapping:
   AfterCaseLabel: true
