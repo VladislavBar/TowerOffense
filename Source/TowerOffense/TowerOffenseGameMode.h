@@ -9,6 +9,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTowerOffenseGameMode, Log, All);
 
 DECLARE_MULTICAST_DELEGATE(FPlayerWinsDelegate);
 DECLARE_MULTICAST_DELEGATE(FPlayerLosesDelegate);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnEnemiesCountChanged, int32);
 
 UCLASS()
 class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
@@ -26,11 +27,15 @@ class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 
 	FPlayerWinsDelegate PlayerWinsDelegate;
 	FPlayerLosesDelegate PlayerLosesDelegate;
+	FOnEnemiesCountChanged EnemiesCountChanged;
 
 	FDelegateHandle OnEnemySpawnedDelegateHandle;
 	FDelegateHandle OnEnemyDestroyedDelegateHandle;
 
 	virtual void BeginPlay() override;
+	void SetupPostBeginPlayEnemiesCountUpdate();
+
+	void SetEnemiesCount(int32 NewEnemiesCount);
 
 	void SetupEnemyCount();
 	void SetupDelegates();
@@ -50,4 +55,5 @@ class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 public:
 	FDelegateHandle AddPlayerWinsHandler(const FPlayerWinsDelegate::FDelegate& Delegate);
 	FDelegateHandle AddPlayerLosesHandler(const FPlayerWinsDelegate::FDelegate& Delegate);
+	FDelegateHandle AddEnemiesCountChangedHandler(const FOnEnemiesCountChanged::FDelegate& Delegate);
 };

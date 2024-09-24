@@ -10,8 +10,22 @@ void ATowerOffenseGameMode::BeginPlay()
 	Super::BeginPlay();
 
 	CheckSetup();
-	SetupEnemyCount();
 	SetupDelegates();
+	SetupPostBeginPlayEnemiesCountUpdate();
+}
+
+void ATowerOffenseGameMode::SetupPostBeginPlayEnemiesCountUpdate()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	World->GetTimerManager().SetTimerForNextTick(this, &ATowerOffenseGameMode::SetupEnemyCount);
+}
+
+void ATowerOffenseGameMode::SetEnemiesCount(int32 NewEnemiesCount)
+{
+	EnemyCount = NewEnemiesCount;
+	EnemiesCountChanged.Broadcast(EnemyCount);
 }
 
 void ATowerOffenseGameMode::SetupEnemyCount()
@@ -22,7 +36,7 @@ void ATowerOffenseGameMode::SetupEnemyCount()
 	TArray<AActor*> FoundActors;
 	UGameplayStatics::GetAllActorsOfClass(World, EnemyClass, FoundActors);
 
-	EnemyCount = FoundActors.Num();
+	SetEnemiesCount(FoundActors.Num());
 }
 
 void ATowerOffenseGameMode::SetupDelegates()
@@ -45,7 +59,7 @@ void ATowerOffenseGameMode::OnEnemySpawned(AActor* Actor)
 {
 	if (!IsValid(Actor) || !IsValid(EnemyClass) || !Actor->IsA(EnemyClass)) return;
 
-	EnemyCount++;
+	SetEnemiesCount(EnemyCount + 1);
 }
 
 void ATowerOffenseGameMode::SetupOnEnemyDestroyedDelegate()
@@ -75,7 +89,7 @@ void ATowerOffenseGameMode::OnEnemyDestroyed(AActor* Actor)
 {
 	if (!IsValid(Actor) || !IsValid(EnemyClass) || !Actor->IsA(EnemyClass)) return;
 
-	EnemyCount--;
+	SetEnemiesCount(EnemyCount - 1);
 	CheckWinCondition();
 }
 
@@ -111,4 +125,9 @@ FDelegateHandle ATowerOffenseGameMode::AddPlayerWinsHandler(const FPlayerWinsDel
 FDelegateHandle ATowerOffenseGameMode::AddPlayerLosesHandler(const FPlayerWinsDelegate::FDelegate& Delegate)
 {
 	return PlayerLosesDelegate.Add(Delegate);
+}
+
+FDelegateHandle ATowerOffenseGameMode::AddEnemiesCountChangedHandler(const FOnEnemiesCountChanged::FDelegate& Delegate)
+{
+	return EnemiesCountChanged.Add(Delegate);
 }

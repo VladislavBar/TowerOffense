@@ -39,6 +39,7 @@ void ATankPlayerController::SetupTankHUD()
 	SetActorTickEnabled(true);
 	SetShowMouseCursor(false);
 	ResumeGame();
+	SetInputMode(FInputModeGameOnly());
 }
 
 void ATankPlayerController::SetupWinScreen()
@@ -48,6 +49,7 @@ void ATankPlayerController::SetupWinScreen()
 	SetActorTickEnabled(false);
 	SetShowMouseCursor(true);
 	PauseGame();
+	SetInputMode(FInputModeUIOnly());
 }
 
 void ATankPlayerController::SetupLoseScreen()
@@ -57,6 +59,7 @@ void ATankPlayerController::SetupLoseScreen()
 	SetActorTickEnabled(false);
 	SetShowMouseCursor(true);
 	PauseGame();
+	SetInputMode(FInputModeUIOnly());
 }
 
 void ATankPlayerController::SetupOnLoseDelegate()
