@@ -9,11 +9,17 @@
 
 #include "TankPawn.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCooldownTickDelegate, const float);
+
 UCLASS()
 class TOWEROFFENSE_API ATankPawn : public ATurretPawn
 {
 	GENERATED_BODY()
 
+public:
+	FOnCooldownTickDelegate OnCooldownTickDelegate;
+
+private:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<USpringArmComponent> SpringArm;
 

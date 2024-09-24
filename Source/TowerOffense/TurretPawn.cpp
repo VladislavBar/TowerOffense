@@ -17,6 +17,8 @@ ATurretPawn::ATurretPawn()
 
 	ProjectileSpawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("ProjectileSpawnPoint"));
 	ProjectileSpawnPoint->SetupAttachment(TurretMesh);
+
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
 TArray<FName> ATurretPawn::GetMaterialTeamColorSlotNames() const
@@ -64,6 +66,8 @@ void ATurretPawn::Fire()
 	if (!IsValid(Projectile)) return;
 
 	Projectile->SetProjectileSpeed(ProjectileSpeed);
+	Projectile->SetDamage(Damage);
+
 	DisableFire();
 }
 
@@ -128,12 +132,29 @@ void ATurretPawn::EnableFire()
 	bCanFire = true;
 }
 
+void ATurretPawn::SetupOnDeathDelegate()
+{
+	if (!IsValid(HealthComponent)) return;
+
+	HealthComponent->OnDeath.AddUObject(this, &ATurretPawn::OnDeath);
+}
+
+void ATurretPawn::OnDeath()
+{
+	Destroy();
+}
+
 void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
 {
 	if (!IsValid(TurretMesh)) return;
 	if (bInstantRotation) return RotateWithoutInterp(Location, DeltaSeconds);
 
 	return RotateWithInterp(Location, DeltaSeconds);
+}
+
+void ATurretPawn::TakeHit(float DamageAmount)
+{
+	HealthComponent->TakeHit(DamageAmount);
 }
 
 FRotator ATurretPawn::GetTurretMeshRotation() const
@@ -181,4 +202,10 @@ void ATurretPawn::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 	RotateTurretMesh(DeltaSeconds);
 	DrawDebugAtSpawnPointLocation();
+}
+
+void ATurretPawn::BeginPlay()
+{
+	Super::BeginPlay();
+	SetupOnDeathDelegate();
 }

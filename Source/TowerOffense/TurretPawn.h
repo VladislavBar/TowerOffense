@@ -2,6 +2,7 @@
 
 #include "Components/CapsuleComponent.h"
 #include "CoreMinimal.h"
+#include "HealthComponent.h"
 #include "Projectile.h"
 #include "GameFramework/Pawn.h"
 
@@ -22,6 +23,9 @@ class TOWEROFFENSE_API ATurretPawn : public APawn
 	UPROPERTY(EditAnywhere)
 	float RotationSpeedWhenTargetLocked = 10.f;
 
+	UPROPERTY(EditAnywhere, Category = "Turret|Fire", meta = (ClampMin = "0.0"))
+	float Damage = 10.f;
+
 protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> BaseMesh;
@@ -31,6 +35,9 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<USceneComponent> ProjectileSpawnPoint;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UHealthComponent> HealthComponent;
 
 	bool bLockTarget = false;
 	FTimerHandle FireCooldownTimerHandle;
@@ -69,16 +76,19 @@ protected:
 	float RotationInterpExponent = 2.f;
 
 public:
-	UFUNCTION(BlueprintCallable)
-	void Fire();
-	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
 	FRotator GetTurretMeshRotation() const;
 	FVector GetProjectileSpawnLocation() const;
 	float GetProjectileSpeed() const { return ProjectileSpeed; }
 
+	UFUNCTION(BlueprintCallable)
+	void Fire();
+	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
+	void TakeHit(float DamageAmount);
+
 protected:
 	void SetTargetLocation(const FVector& Location);
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void BeginPlay() override;
 
 private:
 	void SetupTeamColorDynamicMaterial(UStaticMeshComponent* Mesh);
@@ -91,6 +101,8 @@ private:
 	void StartCooldownTimer();
 	void DisableFire();
 	void EnableFire();
+	void SetupOnDeathDelegate();
+	void OnDeath();
 
 public:
 	ATurretPawn();

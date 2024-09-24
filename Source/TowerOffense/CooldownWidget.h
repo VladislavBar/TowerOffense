@@ -10,9 +10,11 @@ class TOWEROFFENSE_API UCooldownWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
+	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> CooldownText;
 
 public:
-	void SetCooldownText(float RemainingCooldownTime);
+	void SetCooldownText(const float RemainingCooldownTime);
+	virtual void NativeConstruct() override;
+	void SetupOnCooldownTickDelegate();
 };

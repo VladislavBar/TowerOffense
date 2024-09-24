@@ -6,8 +6,7 @@ void ATankPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetupCooldownWidget();
-	SetupCrosshairWidget();
+	SetupTankHUD();
 }
 
 void ATankPlayerController::Tick(const float DeltaSeconds)
@@ -15,7 +14,6 @@ void ATankPlayerController::Tick(const float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	ResetCursor();
-	CrosshairFollowMouse();
 }
 
 void ATankPlayerController::ResetCursor()
@@ -29,36 +27,11 @@ void ATankPlayerController::ResetCursor()
 	SetMouseLocation(ViewportWidth / 2, ViewportHeight / 2);
 }
 
-void ATankPlayerController::CrosshairFollowMouse()
+void ATankPlayerController::SetupTankHUD()
 {
-	if (!IsValid(CrosshairWidget)) return;
-
-	FVector2D MousePosition = FVector2D::ZeroVector;
-	GetMousePosition(MousePosition.X, MousePosition.Y);
-	CrosshairWidget->SetPositionInViewport(MousePosition);
-}
-
-void ATankPlayerController::SetupCrosshairWidget()
-{
-	if (!IsValid(CrosshairWidgetClass))
+	if (!IsValid(TankPawnHUDClass))
 	{
-		UE_LOG(LogTankPawn, Error, TEXT("CrosshairWidgetClass is not set in %s"), *GetName());
-
-		if (!IsValid(GEngine)) return;
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CrosshairWidgetClass is not set in TankPlayerController"));
-
-		return;
-	}
-
-	CrosshairWidget = CreateWidget<UCrosshairWidget>(this, CrosshairWidgetClass);
-	CrosshairWidget->AddToViewport();
-}
-
-void ATankPlayerController::SetupCooldownWidget()
-{
-	if (!IsValid(CooldownWidgetClass))
-	{
-		UE_LOG(LogTankPawn, Error, TEXT("CooldownWidgetClass is not set in %s"), *GetName());
+		UE_LOG(LogTankPawn, Error, TEXT("TankPawnHUDClass is not set in %s"), *GetName());
 
 		if (!IsValid(GEngine)) return;
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CooldownWidgetClass is not set in TankPlayerController"));
@@ -66,13 +39,8 @@ void ATankPlayerController::SetupCooldownWidget()
 		return;
 	}
 
-	CooldownWidget = CreateWidget<UCooldownWidget>(this, CooldownWidgetClass);
-	CooldownWidget->AddToViewport();
-}
-
-void ATankPlayerController::RefreshCooldownWidget(float RemainingCooldownTime)
-{
-	if(!IsValid(CooldownWidget)) return;
-
-	CooldownWidget->SetCooldownText(RemainingCooldownTime);
+	TankPawnHUD = CreateWidget<UTankPawnHUD>(this, TankPawnHUDClass);
+	if (!IsValid(TankPawnHUD)) return;
+	
+	TankPawnHUD->AddToViewport();
 }
