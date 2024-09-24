@@ -42,7 +42,7 @@ class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 	void OnEnemyDestroyed(AActor* Actor);
 
 	UFUNCTION()
-	void OnPlayerLoses(AActor* Actor)
+	void OnPlayerLoses(AActor* Actor);
 
 	void CheckSetup() const;
 	void CheckWinCondition() const;

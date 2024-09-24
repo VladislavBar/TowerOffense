@@ -16,6 +16,11 @@ class TOWEROFFENSE_API UEndScreenHUD : public UUserWidget
 	UPROPERTY(EditInstanceOnly, Category = "EndScreen", meta = (BindWidget))
 	TObjectPtr<UButton> ExitButton;
 
-	void RestartGame() const;
-	void ExitGame() const;
+	virtual void NativeConstruct() override;
+
+	UFUNCTION()
+	void RestartGame();
+
+	UFUNCTION()
+	void ExitGame();
 };

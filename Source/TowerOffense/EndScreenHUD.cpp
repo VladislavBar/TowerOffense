@@ -2,7 +2,22 @@
 
 #include "Kismet/GameplayStatics.h"
 
-void UEndScreenHUD::RestartGame() const
+void UEndScreenHUD::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	if (IsValid(RestartButton))
+	{
+		RestartButton->OnClicked.AddDynamic(this, &UEndScreenHUD::RestartGame);
+	}
+
+	if (IsValid(ExitButton))
+	{
+		ExitButton->OnClicked.AddDynamic(this, &UEndScreenHUD::ExitGame);
+	}
+}
+
+void UEndScreenHUD::RestartGame()
 {
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
@@ -13,7 +28,7 @@ void UEndScreenHUD::RestartGame() const
 	UGameplayStatics::OpenLevel(World, CurrentLevel->GetFName());
 }
 
-void UEndScreenHUD::ExitGame() const
+void UEndScreenHUD::ExitGame()
 {
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
