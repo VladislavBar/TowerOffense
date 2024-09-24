@@ -1,5 +1,6 @@
 #include "TowerOffenseGameMode.h"
 
+#include "TankPawn.h"
 #include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(LogTowerOffenseGameMode)
@@ -28,6 +29,7 @@ void ATowerOffenseGameMode::SetupDelegates()
 {
 	SetupOnEnemySpawnedDelegate();
 	SetupOnEnemyDestroyedDelegate();
+	SetupOnPlayerDestroyedDelegate();
 }
 
 void ATowerOffenseGameMode::SetupOnEnemySpawnedDelegate()
@@ -55,12 +57,31 @@ void ATowerOffenseGameMode::SetupOnEnemyDestroyedDelegate()
 	OnEnemyDestroyedDelegateHandle = World->AddOnActorDestroyedHandler(OnEnemyDestroyedDelegate);
 }
 
+void ATowerOffenseGameMode::SetupOnPlayerDestroyedDelegate()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	const APlayerController* PlayerController = World->GetFirstPlayerController();
+	if (!IsValid(PlayerController)) return;
+
+	AActor* PlayerPawn = PlayerController->GetPawn();
+	if (!IsValid(PlayerPawn)) return;
+
+	PlayerPawn->OnDestroyed.AddDynamic(this, &ATowerOffenseGameMode::OnPlayerLoses);
+}
+
 void ATowerOffenseGameMode::OnEnemyDestroyed(AActor* Actor)
 {
 	if (!IsValid(Actor) || !IsValid(EnemyClass) || !Actor->IsA(EnemyClass)) return;
 
 	EnemyCount--;
 	CheckWinCondition();
+}
+
+void ATowerOffenseGameMode::OnPlayerLoses(AActor* Actor)
+{
+	PlayerLosesDelegate.Broadcast();
 }
 
 void ATowerOffenseGameMode::CheckSetup() const
@@ -85,4 +106,9 @@ void ATowerOffenseGameMode::CheckWinCondition() const
 FDelegateHandle ATowerOffenseGameMode::AddPlayerWinsHandler(const FPlayerWinsDelegate::FDelegate& Delegate)
 {
 	return PlayerWinsDelegate.Add(Delegate);
+}
+
+FDelegateHandle ATowerOffenseGameMode::AddPlayerLosesHandler(const FPlayerWinsDelegate::FDelegate& Delegate)
+{
+	return PlayerLosesDelegate.Add(Delegate);
 }

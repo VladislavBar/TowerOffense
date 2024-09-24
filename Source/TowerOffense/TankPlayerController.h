@@ -34,7 +34,7 @@ private:
 	TObjectPtr<UEndScreenHUD> LoseScreen;
 
 	FPlayerWinsDelegate::FDelegate OnPlayerWinDelegate;
-	FPlayerLosesDelegate::FDelegate OnPlayerLoseDelegate;
+	FPlayerLosesDelegate::FDelegate OnPlayerLosesDelegate;
 
 	FDelegateHandle OnPlayerWinsDelegateHandle;
 	FDelegateHandle OnPlayersLosesDelegateHandle;
@@ -51,7 +51,9 @@ private:
 
 	void SetupOnLoseDelegate();
 	void SetupOnWinDelegate();
+
 	void OnPlayerWins();
+	void OnPlayerLoses();
 
 	void ClearTankPawnHUD() const;
 	void ClearEndScreenHUD() const;

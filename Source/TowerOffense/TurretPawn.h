@@ -99,8 +99,10 @@ private:
 	void RotateWithInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds);
 	void SetSpawnPointRotationAtLocation(const FVector& CurrentTargetLocation);
 	void StartCooldownTimer();
+
 	void DisableFire();
 	void EnableFire();
+
 	void SetupOnDeathDelegate();
 	void OnDeath();
 

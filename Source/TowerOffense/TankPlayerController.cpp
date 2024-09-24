@@ -11,6 +11,7 @@ void ATankPlayerController::BeginPlay()
 
 	SetupTankHUD();
 	SetupOnWinDelegate();
+	SetupOnLoseDelegate();
 }
 
 void ATankPlayerController::Tick(const float DeltaSeconds)
@@ -58,7 +59,17 @@ void ATankPlayerController::SetupLoseScreen()
 	PauseGame();
 }
 
-void ATankPlayerController::SetupOnLoseDelegate() {}
+void ATankPlayerController::SetupOnLoseDelegate()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	ATowerOffenseGameMode* TowerOffenseGameMode = Cast<ATowerOffenseGameMode>(UGameplayStatics::GetGameMode(World));
+	if (!IsValid(TowerOffenseGameMode)) return;
+
+	OnPlayerLosesDelegate.BindUObject(this, &ATankPlayerController::OnPlayerLoses);
+	OnPlayersLosesDelegateHandle = TowerOffenseGameMode->AddPlayerLosesHandler(OnPlayerLosesDelegate);
+}
 
 void ATankPlayerController::SetupOnWinDelegate()
 {
@@ -76,6 +87,12 @@ void ATankPlayerController::OnPlayerWins()
 {
 	ClearTankPawnHUD();
 	SetupWinScreen();
+}
+
+void ATankPlayerController::OnPlayerLoses()
+{
+	ClearTankPawnHUD();
+	SetupLoseScreen();
 }
 
 void ATankPlayerController::ClearTankPawnHUD() const

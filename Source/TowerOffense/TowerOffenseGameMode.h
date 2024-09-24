@@ -22,6 +22,8 @@ class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 
 	FOnActorSpawned::FDelegate OnEnemySpawnedDelegate;
 	FOnActorDestroyed::FDelegate OnEnemyDestroyedDelegate;
+	FOnActorDestroyed::FDelegate OnPlayerDestroyedDelegate;
+
 	FPlayerWinsDelegate PlayerWinsDelegate;
 	FPlayerLosesDelegate PlayerLosesDelegate;
 
@@ -34,13 +36,18 @@ class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 	void SetupDelegates();
 	void SetupOnEnemySpawnedDelegate();
 	void SetupOnEnemyDestroyedDelegate();
+	void SetupOnPlayerDestroyedDelegate();
 
 	void OnEnemySpawned(AActor* Actor);
 	void OnEnemyDestroyed(AActor* Actor);
+
+	UFUNCTION()
+	void OnPlayerLoses(AActor* Actor)
 
 	void CheckSetup() const;
 	void CheckWinCondition() const;
 
 public:
 	FDelegateHandle AddPlayerWinsHandler(const FPlayerWinsDelegate::FDelegate& Delegate);
+	FDelegateHandle AddPlayerLosesHandler(const FPlayerWinsDelegate::FDelegate& Delegate);
 };
