@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "CooldownWidget.h"
 #include "CrosshairWidget.h"
+#include "EnemiesCountWidget.h"
 #include "HealthWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "TankPawnHUD.generated.h"
@@ -20,4 +21,7 @@ class TOWEROFFENSE_API UTankPawnHUD : public UUserWidget
 
 	UPROPERTY(EditInstanceOnly, meta = (BindWidget))
 	TObjectPtr<UCooldownWidget> CooldownWidget;
+
+	UPROPERTY(EditInstanceOnly, meta = (BindWidget))
+	TObjectPtr<UEnemiesCountWidget> EnemiesLeftWidget;
 };
