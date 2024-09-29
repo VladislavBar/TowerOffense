@@ -5,7 +5,7 @@
 #include "CrosshairWidget.generated.h"
 
 class UImage;
-UCLASS()
+UCLASS(Abstract)
 class TOWEROFFENSE_API UCrosshairWidget : public UUserWidget
 {
 	GENERATED_BODY()

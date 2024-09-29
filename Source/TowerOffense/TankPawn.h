@@ -45,7 +45,10 @@ private:
 	TObjectPtr<UInputAction> ToggleCursorAction;
 
 	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UInputMappingContext> InputMappingContext;
+	TObjectPtr<UInputMappingContext> GameControlInputMappingContext;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputMappingContext> StartDelayMappingContext;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement", meta = (ClampMin = "0.0"))
 	float AccelerationDuration = 2.f;
@@ -80,7 +83,9 @@ private:
 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	void SetupActions(UInputComponent* PlayerInputComponent);
-	void SetupInputContext();
+	void SetupInputContext(const UInputMappingContext* InputMappingContext);
+	void RemoveInputContext(const UInputMappingContext* InputMappingContext);
+	
 	void ShowCursor();
 	void HideCursor();
 
@@ -96,6 +101,7 @@ private:
 
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
+	virtual void SetActorTickEnabled(bool bEnabled) override;
 
 public:
 	ATankPawn();

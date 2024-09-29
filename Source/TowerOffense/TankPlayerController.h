@@ -35,9 +35,13 @@ private:
 
 	FPlayerWinsDelegate::FDelegate OnPlayerWinDelegate;
 	FPlayerLosesDelegate::FDelegate OnPlayerLosesDelegate;
+	FOnDelayStartDelegate::FDelegate OnTowerOffenseGameModeLoadedDelegate;
+	FOnDelayFinishDelegate::FDelegate OnTowerOffenseGameModeStartedDelegate;
 
 	FDelegateHandle OnPlayerWinsDelegateHandle;
 	FDelegateHandle OnPlayersLosesDelegateHandle;
+	FDelegateHandle OnTowerOffenseGameModeLoadedDelegateHandle;
+	FDelegateHandle OnTowerOffenseGameModeStartedDelegateHandle;
 
 	virtual void BeginPlay() override;
 	virtual void Tick(const float DeltaSeconds) override;
@@ -49,12 +53,16 @@ private:
 	void SetupWinScreen();
 	void SetupLoseScreen();
 
+	ATowerOffenseGameMode* GetTowerOffenseGameMode() const;
+
+	void SetupDelegates();
 	void SetupOnLoseDelegate();
 	void SetupOnWinDelegate();
+	void SetupOnTowerOffenseGameModeLoadedDelegate();
+	void SetupOnTowerOffenseGameModeStartedDelegate();
 
 	void OnPlayerWins();
 	void OnPlayerLoses();
-
 	void ClearTankPawnHUD() const;
 	void ClearEndScreenHUD() const;
 	void ClearWinScreenHUD() const;
@@ -68,6 +76,9 @@ template <typename WidgetT>
 void ATankPlayerController::SetupHUD(const TSubclassOf<WidgetT>& WidgetClass, TObjectPtr<WidgetT>& Widget, FName&& WidgetClassName)
 {
 	static_assert(TIsDerivedFrom<WidgetT, UUserWidget>::IsDerived, "WidgetT must be derived from UUserWidget");
+
+	if (IsValid(Widget) && Widget->IsInViewport()) return;
+	if (IsValid(Widget) && !Widget->IsInViewport()) return Widget->AddToViewport();
 
 	if (!IsValid(WidgetClass))
 	{

@@ -3,12 +3,13 @@
 #include "CoreMinimal.h"
 #include "CooldownWidget.h"
 #include "CrosshairWidget.h"
+#include "DelayedStartWidget.h"
 #include "EnemiesCountWidget.h"
 #include "HealthWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "TankPawnHUD.generated.h"
 
-UCLASS()
+UCLASS(Abstract)
 class TOWEROFFENSE_API UTankPawnHUD : public UUserWidget
 {
 	GENERATED_BODY()
@@ -24,4 +25,15 @@ class TOWEROFFENSE_API UTankPawnHUD : public UUserWidget
 
 	UPROPERTY(EditInstanceOnly, meta = (BindWidget))
 	TObjectPtr<UEnemiesCountWidget> EnemiesLeftWidget;
+
+	UPROPERTY(EditInstanceOnly, meta = (BindWidget))
+	TObjectPtr<UDelayedStartWidget> DelayedStartWidget;
+
+	virtual void NativeConstruct() override;
+
+	void SetupOnGamePreparing();
+	void SetupOnGameStarted();
+
+public:
+	void SetupWidgets();
 };

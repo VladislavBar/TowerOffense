@@ -18,7 +18,7 @@ void ATankPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	SetupActions(PlayerInputComponent);
-	SetupInputContext();
+	SetupInputContext(GameControlInputMappingContext);
 }
 
 void ATankPawn::SetupActions(UInputComponent* PlayerInputComponent)
@@ -46,18 +46,16 @@ void ATankPawn::SetupActions(UInputComponent* PlayerInputComponent)
 
 	if (IsValid(RotateCameraAction))
 	{
-		EnhancedInputComponent->BindAction(RotateCameraAction, ETriggerEvent::Triggered, this,
-			&ATankPawn::RotateCamera);
+		EnhancedInputComponent->BindAction(RotateCameraAction, ETriggerEvent::Triggered, this, &ATankPawn::RotateCamera);
 	}
 
 	if (IsValid(SetTargetAction))
 	{
-		EnhancedInputComponent->BindAction(SetTargetAction, ETriggerEvent::Started, this,
-			&ATankPawn::ToggleAutoTarget);
+		EnhancedInputComponent->BindAction(SetTargetAction, ETriggerEvent::Started, this, &ATankPawn::ToggleAutoTarget);
 	}
 }
 
-void ATankPawn::SetupInputContext()
+void ATankPawn::SetupInputContext(const UInputMappingContext* InputMappingContext)
 {
 	if (!IsValid(InputMappingContext)) return;
 
@@ -71,6 +69,20 @@ void ATankPawn::SetupInputContext()
 	if (!IsValid(EnhancedInputLocalPlayerSubsystem)) return;
 
 	EnhancedInputLocalPlayerSubsystem->AddMappingContext(InputMappingContext, 0);
+}
+
+void ATankPawn::RemoveInputContext(const UInputMappingContext* InputMappingContext)
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	const ULocalPlayer* LocalPlayer = World->GetFirstLocalPlayerFromController();
+	if (!IsValid(LocalPlayer)) return;
+
+	UEnhancedInputLocalPlayerSubsystem* EnhancedInputLocalPlayerSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+	if (!IsValid(EnhancedInputLocalPlayerSubsystem)) return;
+
+	EnhancedInputLocalPlayerSubsystem->RemoveMappingContext(InputMappingContext);
 }
 
 void ATankPawn::ShowCursor()
@@ -111,8 +123,7 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 	}
 
 	const float AccelerationProgress = FMath::Clamp((ActionData.GetElapsedTime() - LastDirectionChangedTime) / AccelerationDuration, 0.f, 1.f);
-	const float AccelerationValue = FMath::InterpEaseIn(0.f, 1.f, AccelerationProgress,
-		AccelerationExponent);
+	const float AccelerationValue = FMath::InterpEaseIn(0.f, 1.f, AccelerationProgress, AccelerationExponent);
 	AddActorLocalOffset(FVector(Speed * AccelerationValue * AxisValue * World->GetDeltaSeconds(), 0.f, 0.f), true);
 }
 
@@ -230,6 +241,22 @@ void ATankPawn::BeginPlay()
 	Super::BeginPlay();
 
 	HideCursor();
+}
+
+void ATankPawn::SetActorTickEnabled(bool bEnabled)
+{
+	Super::SetActorTickEnabled(bEnabled);
+
+	if (bEnabled)
+	{
+		SetupInputContext(GameControlInputMappingContext);
+		RemoveInputContext(StartDelayMappingContext);
+	}
+	else
+	{
+		SetupInputContext(StartDelayMappingContext);
+		RemoveInputContext(GameControlInputMappingContext);
+	}
 }
 
 APlayerController* ATankPawn::GetPlayerController() const

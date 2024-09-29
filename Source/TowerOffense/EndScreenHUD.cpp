@@ -22,10 +22,10 @@ void UEndScreenHUD::RestartGame()
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	const ULevel* CurrentLevel = GetWorld()->GetCurrentLevel();
-	if (!IsValid(CurrentLevel)) return;
+	const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(World, true);
+	if (CurrentLevelName.IsEmpty()) return;
 
-	UGameplayStatics::OpenLevel(World, CurrentLevel->GetFName());
+	UGameplayStatics::OpenLevel(World, *CurrentLevelName);
 }
 
 void UEndScreenHUD::ExitGame()
