@@ -5,7 +5,7 @@
 #include "Components/TextBlock.h"
 #include "CooldownWidget.generated.h"
 
-UCLASS()
+UCLASS(Abstract)
 class TOWEROFFENSE_API UCooldownWidget : public UUserWidget
 {
 	GENERATED_BODY()

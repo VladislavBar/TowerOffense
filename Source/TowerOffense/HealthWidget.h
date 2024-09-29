@@ -7,7 +7,7 @@
 #include "Components/TextBlock.h"
 #include "HealthWidget.generated.h"
 
-UCLASS()
+UCLASS(Abstract)
 class TOWEROFFENSE_API UHealthWidget : public UUserWidget
 {
 	GENERATED_BODY()

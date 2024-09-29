@@ -5,7 +5,7 @@
 #include "Components/Button.h"
 #include "EndScreenHUD.generated.h"
 
-UCLASS()
+UCLASS(Abstract)
 class TOWEROFFENSE_API UEndScreenHUD : public UUserWidget
 {
 	GENERATED_BODY()

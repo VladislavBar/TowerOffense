@@ -10,8 +10,7 @@ void ATankPlayerController::BeginPlay()
 	Super::BeginPlay();
 
 	SetupTankHUD();
-	SetupOnWinDelegate();
-	SetupOnLoseDelegate();
+	SetupDelegates();
 }
 
 void ATankPlayerController::Tick(const float DeltaSeconds)
@@ -40,6 +39,11 @@ void ATankPlayerController::SetupTankHUD()
 	SetShowMouseCursor(false);
 	ResumeGame();
 	SetInputMode(FInputModeGameOnly());
+
+	if (IsValid(TankPawnHUD))
+	{
+		TankPawnHUD->SetupWidgets();
+	}
 }
 
 void ATankPlayerController::SetupWinScreen()
@@ -62,12 +66,25 @@ void ATankPlayerController::SetupLoseScreen()
 	SetInputMode(FInputModeUIOnly());
 }
 
-void ATankPlayerController::SetupOnLoseDelegate()
+ATowerOffenseGameMode* ATankPlayerController::GetTowerOffenseGameMode() const
 {
 	const UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
+	if (!IsValid(World)) return nullptr;
 
-	ATowerOffenseGameMode* TowerOffenseGameMode = Cast<ATowerOffenseGameMode>(UGameplayStatics::GetGameMode(World));
+	return Cast<ATowerOffenseGameMode>(UGameplayStatics::GetGameMode(World));
+}
+
+void ATankPlayerController::SetupDelegates()
+{
+	SetupOnLoseDelegate();
+	SetupOnWinDelegate();
+	SetupOnTowerOffenseGameModeLoadedDelegate();
+	SetupOnTowerOffenseGameModeStartedDelegate();
+}
+
+void ATankPlayerController::SetupOnLoseDelegate()
+{
+	ATowerOffenseGameMode* TowerOffenseGameMode = GetTowerOffenseGameMode();
 	if (!IsValid(TowerOffenseGameMode)) return;
 
 	OnPlayerLosesDelegate.BindUObject(this, &ATankPlayerController::OnPlayerLoses);
@@ -76,14 +93,29 @@ void ATankPlayerController::SetupOnLoseDelegate()
 
 void ATankPlayerController::SetupOnWinDelegate()
 {
-	const UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
-
-	ATowerOffenseGameMode* TowerOffenseGameMode = Cast<ATowerOffenseGameMode>(UGameplayStatics::GetGameMode(World));
+	ATowerOffenseGameMode* TowerOffenseGameMode = GetTowerOffenseGameMode();
 	if (!IsValid(TowerOffenseGameMode)) return;
 
 	OnPlayerWinDelegate.BindUObject(this, &ATankPlayerController::OnPlayerWins);
 	OnPlayerWinsDelegateHandle = TowerOffenseGameMode->AddPlayerWinsHandler(OnPlayerWinDelegate);
+}
+
+void ATankPlayerController::SetupOnTowerOffenseGameModeLoadedDelegate()
+{
+	ATowerOffenseGameMode* TowerOffenseGameMode = GetTowerOffenseGameMode();
+	if (!IsValid(TowerOffenseGameMode)) return;
+
+	OnTowerOffenseGameModeLoadedDelegate.BindUObject(this, &ATankPlayerController::SetupTankHUD);
+	OnTowerOffenseGameModeLoadedDelegateHandle = TowerOffenseGameMode->AddDelayStartHandler(OnTowerOffenseGameModeLoadedDelegate);
+}
+
+void ATankPlayerController::SetupOnTowerOffenseGameModeStartedDelegate()
+{
+	ATowerOffenseGameMode* TowerOffenseGameMode = GetTowerOffenseGameMode();
+	if (!IsValid(TowerOffenseGameMode)) return;
+
+	OnTowerOffenseGameModeStartedDelegate.BindUObject(this, &ATankPlayerController::SetupTankHUD);
+	OnTowerOffenseGameModeStartedDelegateHandle = TowerOffenseGameMode->AddDelayFinishHandler(OnTowerOffenseGameModeStartedDelegate);
 }
 
 void ATankPlayerController::OnPlayerWins()

@@ -6,7 +6,7 @@
 #include "Components/TextBlock.h"
 #include "EnemiesCountWidget.generated.h"
 
-UCLASS()
+UCLASS(Abstract)
 class TOWEROFFENSE_API UEnemiesCountWidget : public UUserWidget
 {
 	GENERATED_BODY()
@@ -14,7 +14,7 @@ class TOWEROFFENSE_API UEnemiesCountWidget : public UUserWidget
 	UPROPERTY(EditInstanceOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> EnemiesCountText;
 
-	FOnEnemiesCountChanged::FDelegate OnEnemiesCountChangedDelegate;
+	FOnEnemiesCountChangedDelegate::FDelegate OnEnemiesCountChangedDelegate;
 	FDelegateHandle OnEnemiesCountChangedDelegateHandle;
 
 	virtual void NativeConstruct() override;

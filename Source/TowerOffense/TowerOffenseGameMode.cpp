@@ -5,6 +5,12 @@
 
 DEFINE_LOG_CATEGORY(LogTowerOffenseGameMode)
 
+ATowerOffenseGameMode::ATowerOffenseGameMode()
+{
+	PrimaryActorTick.bStartWithTickEnabled = true;
+	PrimaryActorTick.bCanEverTick = true;
+}
+
 void ATowerOffenseGameMode::BeginPlay()
 {
 	Super::BeginPlay();
@@ -12,6 +18,8 @@ void ATowerOffenseGameMode::BeginPlay()
 	CheckSetup();
 	SetupDelegates();
 	SetupPostBeginPlayEnemiesCountUpdate();
+	SetupStartDelay();
+	SetupFinishDelay();
 }
 
 void ATowerOffenseGameMode::SetupPostBeginPlayEnemiesCountUpdate()
@@ -85,12 +93,41 @@ void ATowerOffenseGameMode::SetupOnPlayerDestroyedDelegate()
 	PlayerPawn->OnDestroyed.AddDynamic(this, &ATowerOffenseGameMode::OnPlayerLoses);
 }
 
+void ATowerOffenseGameMode::SetupStartDelay()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	DisableSelectedActorsTick();
+	World->GetTimerManager().SetTimerForNextTick(this, &ATowerOffenseGameMode::OnStartDelay);
+}
+
+void ATowerOffenseGameMode::SetupFinishDelay()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	World->GetTimerManager().SetTimer(DelayTimerHandle, this, &ATowerOffenseGameMode::OnFinishDelay, DelayTime, false);
+}
+
 void ATowerOffenseGameMode::OnEnemyDestroyed(AActor* Actor)
 {
 	if (!IsValid(Actor) || !IsValid(EnemyClass) || !Actor->IsA(EnemyClass)) return;
 
 	SetEnemiesCount(EnemyCount - 1);
 	CheckWinCondition();
+}
+
+void ATowerOffenseGameMode::OnStartDelay()
+{
+	DisableSelectedActorsTick();
+	DelayStartDelegate.Broadcast();
+}
+
+void ATowerOffenseGameMode::OnFinishDelay()
+{
+	EnableSelectedActorsTick();
+	DelayFinishDelegate.Broadcast();
 }
 
 void ATowerOffenseGameMode::OnPlayerLoses(AActor* Actor)
@@ -117,6 +154,54 @@ void ATowerOffenseGameMode::CheckWinCondition() const
 	PlayerWinsDelegate.Broadcast();
 }
 
+void ATowerOffenseGameMode::ToggleSelectedActorsTick(bool bShouldTick) const
+{
+	if (!IsValid(DelayStartActorClass)) return;
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(World, DelayStartActorClass, FoundActors);
+
+	for (AActor* Actor : FoundActors)
+	{
+		if (!IsValid(Actor)) continue;
+
+		Actor->SetActorTickEnabled(bShouldTick);
+	}
+}
+
+void ATowerOffenseGameMode::DisableSelectedActorsTick()
+{
+	bHasStarted = false;
+	ToggleSelectedActorsTick(false);
+}
+
+void ATowerOffenseGameMode::EnableSelectedActorsTick()
+{
+	bHasStarted = true;
+	ToggleSelectedActorsTick(true);
+}
+
+void ATowerOffenseGameMode::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	BroadcastRemainingTime();
+}
+
+void ATowerOffenseGameMode::BroadcastRemainingTime() const
+{
+	if (bHasStarted) return;
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	const float TimerRemaining = World->GetTimerManager().GetTimerRemaining(DelayTimerHandle);
+	DelayRemainingTimeDelegate.Broadcast(TimerRemaining);
+}
+
 FDelegateHandle ATowerOffenseGameMode::AddPlayerWinsHandler(const FPlayerWinsDelegate::FDelegate& Delegate)
 {
 	return PlayerWinsDelegate.Add(Delegate);
@@ -127,7 +212,22 @@ FDelegateHandle ATowerOffenseGameMode::AddPlayerLosesHandler(const FPlayerWinsDe
 	return PlayerLosesDelegate.Add(Delegate);
 }
 
-FDelegateHandle ATowerOffenseGameMode::AddEnemiesCountChangedHandler(const FOnEnemiesCountChanged::FDelegate& Delegate)
+FDelegateHandle ATowerOffenseGameMode::AddEnemiesCountChangedHandler(const FOnEnemiesCountChangedDelegate::FDelegate& Delegate)
 {
 	return EnemiesCountChanged.Add(Delegate);
+}
+
+FDelegateHandle ATowerOffenseGameMode::AddDelayStartHandler(const FOnDelayStartDelegate::FDelegate& Delegate)
+{
+	return DelayStartDelegate.Add(Delegate);
+}
+
+FDelegateHandle ATowerOffenseGameMode::AddDelayFinishHandler(const FOnDelayStartDelegate::FDelegate& Delegate)
+{
+	return DelayFinishDelegate.Add(Delegate);
+}
+
+FDelegateHandle ATowerOffenseGameMode::AddDelayRemainingTimeHandler(const FOnDelayRemainingTimeDelegate::FDelegate& Delegate)
+{
+	return DelayRemainingTimeDelegate.Add(Delegate);
 }
