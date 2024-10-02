@@ -24,7 +24,7 @@ private:
 	TObjectPtr<USpringArmComponent> SpringArm;
 
 	UPROPERTY(EditAnywhere, Category = "Tank|Camera")
-	TObjectPtr<UCameraComponent> Camera;
+	TObjectPtr<UCameraComponent> CameraComponent;
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UInputAction> MoveForwardAction;
@@ -50,6 +50,9 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UInputMappingContext> StartDelayMappingContext;
 
+	UPROPERTY(EditDefaultsOnly, Category = "VFX")
+	TObjectPtr<UNiagaraComponent> VehicleSmokeEffect;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement", meta = (ClampMin = "0.0"))
 	float AccelerationDuration = 2.f;
 
@@ -71,6 +74,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Camera")
 	float MaxPitch = 90.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "VFX")
+	float SmokeSpeedModifier = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Death")
+	float SpectatorOffsetSpawnDistance = 100.f;
+
 public:
 	float GetSpeed() const { return Speed; }
 	float GetAccelerationDuration() const { return AccelerationDuration; }
@@ -85,11 +94,12 @@ private:
 	void SetupActions(UInputComponent* PlayerInputComponent);
 	void SetupInputContext(const UInputMappingContext* InputMappingContext);
 	void RemoveInputContext(const UInputMappingContext* InputMappingContext);
-	
+
 	void ShowCursor();
 	void HideCursor();
 
 	void Move(const FInputActionInstance& ActionData);
+	void OnMoveStopped();
 	void Turn(const FInputActionInstance& ActionData);
 	void RotateCamera(const FInputActionInstance& ActionData);
 	void ToggleAutoTarget();
@@ -98,10 +108,12 @@ private:
 	void RotateTurretMeshByCursor(const float DeltaSeconds);
 	void RefreshCooldownWidget();
 	void ResetAccelerationDurationElapsed();
+	void UpdateSmokeEffectSpeed(float SmokeSpeed);
 
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 	virtual void SetActorTickEnabled(bool bEnabled) override;
+	virtual void Destroyed() override;
 
 public:
 	ATankPawn();

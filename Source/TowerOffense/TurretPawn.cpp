@@ -1,6 +1,10 @@
 #include "TurretPawn.h"
 
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Particles/ParticleSystemComponent.h"
 
 ATurretPawn::ATurretPawn()
 {
@@ -20,6 +24,9 @@ ATurretPawn::ATurretPawn()
 	ProjectileSpawnPoint->SetupAttachment(TurretMesh);
 
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+
+	OnFireEffectComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("OnFireEffectComponent"));
+	OnFireEffectComponent->SetupAttachment(TurretMesh);
 }
 
 TArray<FName> ATurretPawn::GetMaterialTeamColorSlotNames() const
@@ -70,6 +77,11 @@ void ATurretPawn::Fire()
 	Projectile->SetDamage(Damage);
 
 	DisableFire();
+
+	if (IsValid(OnFireEffectComponent))
+	{
+		OnFireEffectComponent->ActivateSystem();
+	}
 }
 
 void ATurretPawn::RotateWithoutInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds)
@@ -142,7 +154,18 @@ void ATurretPawn::SetupOnDeathDelegate()
 
 void ATurretPawn::OnDeath()
 {
+	EmitOnDeathEffect();
 	Destroy();
+}
+
+void ATurretPawn::EmitOnDeathEffect() const
+{
+	if (!IsValid(OnDeathEffect)) return;
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	UGameplayStatics::SpawnEmitterAtLocation(World, OnDeathEffect, GetActorLocation(), FRotator::ZeroRotator);
 }
 
 void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)

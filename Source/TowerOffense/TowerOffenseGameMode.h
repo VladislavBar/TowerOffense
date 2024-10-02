@@ -25,6 +25,9 @@ class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 	UPROPERTY(EditDefaultsOnly, Category = "Start", meta = (ClampMin = "0.0"))
 	float DelayTime = 10.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "End", meta = (ClampMin = "0.0"))
+	float MatchEndDelayTime = 5.f;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Start")
 	TSubclassOf<AActor> DelayStartActorClass;
 
@@ -46,6 +49,7 @@ class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 	FDelegateHandle OnEnemyDestroyedDelegateHandle;
 
 	FTimerHandle DelayTimerHandle;
+	FTimerHandle MatchEndedTimerHandle;
 
 public:
 	ATowerOffenseGameMode();
@@ -63,17 +67,20 @@ private:
 	void SetupOnPlayerDestroyedDelegate();
 	void SetupStartDelay();
 	void SetupFinishDelay();
+	void SetupEndMatchDelay(FTimerDelegate::TMethodPtr<ATowerOffenseGameMode> InTimerMethod);
+
+	UFUNCTION()
+	void SetupOnPlayerLosesEndMatchTimer(AActor* Actor);
 
 	void OnEnemySpawned(AActor* Actor);
 	void OnEnemyDestroyed(AActor* Actor);
 	void OnStartDelay();
 	void OnFinishDelay();
-
-	UFUNCTION()
-	void OnPlayerLoses(AActor* Actor);
+	void OnPlayerWins();
+	void OnPlayerLoses();
 
 	void CheckSetup() const;
-	void CheckWinCondition() const;
+	void CheckAndSetupWinCondition();
 
 	void ToggleSelectedActorsTick(bool bShouldTick) const;
 	void DisableSelectedActorsTick();

@@ -90,7 +90,7 @@ void ATowerOffenseGameMode::SetupOnPlayerDestroyedDelegate()
 	AActor* PlayerPawn = PlayerController->GetPawn();
 	if (!IsValid(PlayerPawn)) return;
 
-	PlayerPawn->OnDestroyed.AddDynamic(this, &ATowerOffenseGameMode::OnPlayerLoses);
+	PlayerPawn->OnDestroyed.AddDynamic(this, &ATowerOffenseGameMode::SetupOnPlayerLosesEndMatchTimer);
 }
 
 void ATowerOffenseGameMode::SetupStartDelay()
@@ -110,12 +110,25 @@ void ATowerOffenseGameMode::SetupFinishDelay()
 	World->GetTimerManager().SetTimer(DelayTimerHandle, this, &ATowerOffenseGameMode::OnFinishDelay, DelayTime, false);
 }
 
+void ATowerOffenseGameMode::SetupEndMatchDelay(FTimerDelegate::TMethodPtr<ATowerOffenseGameMode> InTimerMethod)
+{
+	UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	World->GetTimerManager().SetTimer(MatchEndedTimerHandle, this, InTimerMethod, MatchEndDelayTime, false);
+}
+
+void ATowerOffenseGameMode::SetupOnPlayerLosesEndMatchTimer(AActor* Actor)
+{
+	SetupEndMatchDelay(&ATowerOffenseGameMode::OnPlayerLoses);
+}
+
 void ATowerOffenseGameMode::OnEnemyDestroyed(AActor* Actor)
 {
 	if (!IsValid(Actor) || !IsValid(EnemyClass) || !Actor->IsA(EnemyClass)) return;
 
 	SetEnemiesCount(EnemyCount - 1);
-	CheckWinCondition();
+	CheckAndSetupWinCondition();
 }
 
 void ATowerOffenseGameMode::OnStartDelay()
@@ -130,7 +143,12 @@ void ATowerOffenseGameMode::OnFinishDelay()
 	DelayFinishDelegate.Broadcast();
 }
 
-void ATowerOffenseGameMode::OnPlayerLoses(AActor* Actor)
+void ATowerOffenseGameMode::OnPlayerWins()
+{
+	PlayerWinsDelegate.Broadcast();
+}
+
+void ATowerOffenseGameMode::OnPlayerLoses()
 {
 	PlayerLosesDelegate.Broadcast();
 }
@@ -147,11 +165,11 @@ void ATowerOffenseGameMode::CheckSetup() const
 	}
 }
 
-void ATowerOffenseGameMode::CheckWinCondition() const
+void ATowerOffenseGameMode::CheckAndSetupWinCondition()
 {
 	if (EnemyCount > 0) return;
 
-	PlayerWinsDelegate.Broadcast();
+	SetupEndMatchDelay(&ATowerOffenseGameMode::OnPlayerWins);
 }
 
 void ATowerOffenseGameMode::ToggleSelectedActorsTick(bool bShouldTick) const

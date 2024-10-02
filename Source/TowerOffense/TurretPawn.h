@@ -26,6 +26,12 @@ class TOWEROFFENSE_API ATurretPawn : public APawn
 	UPROPERTY(EditAnywhere, Category = "Turret|Fire", meta = (ClampMin = "0.0"))
 	float Damage = 10.f;
 
+	UPROPERTY(EditAnywhere, Category = "Turret|VFX")
+	TObjectPtr<UNiagaraComponent> OnFireEffectComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Turret|VFX")
+	TObjectPtr<UParticleSystem> OnDeathEffect;
+
 protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> BaseMesh;
@@ -105,6 +111,8 @@ private:
 
 	void SetupOnDeathDelegate();
 	void OnDeath();
+
+	void EmitOnDeathEffect() const;
 
 public:
 	ATurretPawn();
