@@ -63,7 +63,7 @@ private:
 	float DefaultMovementSoundVolume = 0.1f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "SFX", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float MovementSoundReductionTime = 0.5;
+	float MovementSoundReductionTime = 0.5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "SFX", meta = (ClampMin = "0.0"))
 	float MovementSoundReductionExponent = 1.f;

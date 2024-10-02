@@ -169,7 +169,7 @@ void ATurretPawn::EmitOnDeathEffect() const
 	EmitOnDeathVFX();
 }
 
-void ATurretPawn::EmitOnDeathSFX() const
+void ATurretPawn::EmitOnDeathVFX() const
 {
 	if (!IsValid(OnDeathEffect)) return;
 
@@ -179,7 +179,7 @@ void ATurretPawn::EmitOnDeathSFX() const
 	UGameplayStatics::SpawnEmitterAtLocation(World, OnDeathEffect, GetActorLocation(), FRotator::ZeroRotator);
 }
 
-void ATurretPawn::EmitOnDeathVFX() const
+void ATurretPawn::EmitOnDeathSFX() const
 {
 	if (!IsValid(OnDeathSound)) return;
 

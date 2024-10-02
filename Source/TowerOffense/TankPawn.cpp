@@ -145,7 +145,6 @@ void ATankPawn::OnMoveStopped()
 	ResetAccelerationDurationElapsed();
 	UpdateSmokeEffectSpeed(0.f);
 	SetupReduceMovementVolumeTimer();
-	
 }
 
 void ATankPawn::Turn(const FInputActionInstance& ActionData)
