@@ -1,5 +1,10 @@
 #include "Projectile.h"
+
+#include "NiagaraEmitter.h"
+#include "NiagaraFunctionLibrary.h"
 #include "TurretPawn.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
 
 AProjectile::AProjectile()
 {
@@ -21,6 +26,16 @@ void AProjectile::SetDamage(float NewDamage)
 	Damage = NewDamage;
 }
 
+void AProjectile::EmitOnHitProjectileEffect(const FVector& Location, const FVector& Normal)
+{
+	if (!IsValid(OnHitParticleEffect)) return;
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, OnHitParticleEffect, Location, Normal.Rotation());
+}
+
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
@@ -29,11 +44,12 @@ void AProjectile::BeginPlay()
 	SetupIgnoreActors();
 }
 
-void AProjectile::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
+void AProjectile::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal,
+	FVector NormalImpulse, const FHitResult& Hit)
 {
 	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
-
 	DamageTarget(Other);
+	EmitOnHitProjectileEffect(HitLocation, HitNormal);
 	Destroy();
 }
 

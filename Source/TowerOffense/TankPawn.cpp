@@ -2,15 +2,20 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "NiagaraComponent.h"
 #include "TankPlayerController.h"
+#include "GameFramework/SpectatorPawn.h"
 
 ATankPawn::ATankPawn()
 {
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
 
-	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	Camera->SetupAttachment(SpringArm);
+	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	CameraComponent->SetupAttachment(SpringArm);
+
+	VehicleSmokeEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("VehicleSmokeEffect"));
+	VehicleSmokeEffect->SetupAttachment(RootComponent);
 }
 
 void ATankPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -31,7 +36,7 @@ void ATankPawn::SetupActions(UInputComponent* PlayerInputComponent)
 	if (IsValid(MoveForwardAction))
 	{
 		EnhancedInputComponent->BindAction(MoveForwardAction, ETriggerEvent::Triggered, this, &ATankPawn::Move);
-		EnhancedInputComponent->BindAction(MoveForwardAction, ETriggerEvent::Completed, this, &ATankPawn::ResetAccelerationDurationElapsed);
+		EnhancedInputComponent->BindAction(MoveForwardAction, ETriggerEvent::Completed, this, &ATankPawn::OnMoveStopped);
 	}
 
 	if (IsValid(TurnRightAction))
@@ -125,6 +130,13 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 	const float AccelerationProgress = FMath::Clamp((ActionData.GetElapsedTime() - LastDirectionChangedTime) / AccelerationDuration, 0.f, 1.f);
 	const float AccelerationValue = FMath::InterpEaseIn(0.f, 1.f, AccelerationProgress, AccelerationExponent);
 	AddActorLocalOffset(FVector(Speed * AccelerationValue * AxisValue * World->GetDeltaSeconds(), 0.f, 0.f), true);
+	UpdateSmokeEffectSpeed(Speed * AccelerationValue);
+}
+
+void ATankPawn::OnMoveStopped()
+{
+	ResetAccelerationDurationElapsed();
+	UpdateSmokeEffectSpeed(0.f);
 }
 
 void ATankPawn::Turn(const FInputActionInstance& ActionData)
@@ -229,9 +241,17 @@ void ATankPawn::ResetAccelerationDurationElapsed()
 	LastDirectionChangedTime = 0.f;
 }
 
+void ATankPawn::UpdateSmokeEffectSpeed(float SmokeSpeed)
+{
+	if (!IsValid(VehicleSmokeEffect)) return;
+
+	VehicleSmokeEffect->SetFloatParameter("Speed", SmokeSpeed * SmokeSpeedModifier);
+}
+
 void ATankPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
 	RotateTurretMeshByCursor(DeltaSeconds);
 	RefreshCooldownWidget();
 }
@@ -257,6 +277,26 @@ void ATankPawn::SetActorTickEnabled(bool bEnabled)
 		SetupInputContext(StartDelayMappingContext);
 		RemoveInputContext(GameControlInputMappingContext);
 	}
+}
+void ATankPawn::Destroyed()
+{
+	if (!IsValid(CameraComponent)) return Super::Destroyed();
+
+	APlayerController* PlayerController = GetPlayerController();
+	const FRotator Rotation = CameraComponent->GetComponentRotation();
+	const FVector Location = CameraComponent->GetComponentLocation();
+
+	Super::Destroyed();
+
+	if (!IsValid(PlayerController)) return;
+
+	UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	ASpectatorPawn* NewActor = World->SpawnActor<ASpectatorPawn>(ASpectatorPawn::StaticClass(), Location, Rotation);
+	if (!IsValid(NewActor)) return;
+
+	PlayerController->Possess(NewActor);
 }
 
 APlayerController* ATankPawn::GetPlayerController() const
