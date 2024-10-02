@@ -1,7 +1,7 @@
 #include "TurretPawn.h"
 
 #include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"
+#include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -27,6 +27,11 @@ ATurretPawn::ATurretPawn()
 
 	OnFireEffectComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("OnFireEffectComponent"));
 	OnFireEffectComponent->SetupAttachment(TurretMesh);
+
+	OnRotationSoundComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("OnRotationSoundComponent"));
+	OnRotationSoundComponent->SetupAttachment(TurretMesh);
+	OnRotationSoundComponent->bAutoActivate = false;
+	OnRotationSoundComponent->Stop();
 }
 
 TArray<FName> ATurretPawn::GetMaterialTeamColorSlotNames() const
@@ -160,6 +165,12 @@ void ATurretPawn::OnDeath()
 
 void ATurretPawn::EmitOnDeathEffect() const
 {
+	EmitOnDeathSFX();
+	EmitOnDeathVFX();
+}
+
+void ATurretPawn::EmitOnDeathSFX() const
+{
 	if (!IsValid(OnDeathEffect)) return;
 
 	const UWorld* World = GetWorld();
@@ -168,12 +179,50 @@ void ATurretPawn::EmitOnDeathEffect() const
 	UGameplayStatics::SpawnEmitterAtLocation(World, OnDeathEffect, GetActorLocation(), FRotator::ZeroRotator);
 }
 
+void ATurretPawn::EmitOnDeathVFX() const
+{
+	if (!IsValid(OnDeathSound)) return;
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	UGameplayStatics::PlaySoundAtLocation(World, OnDeathSound, GetActorLocation());
+}
+
+void ATurretPawn::EnableRotationSound()
+{
+	if (!IsValid(OnRotationSoundComponent)) return;
+
+	OnRotationSoundComponent->Activate();
+	OnRotationSoundComponent->Play();
+}
+
+void ATurretPawn::AdjustRotationSoundVolume(const float RotationDifference)
+{
+	if (!IsValid(OnRotationSoundComponent)) return;
+
+	const float Volume = UKismetMathLibrary::FClamp(RotationDifference * RotationSoundVolumeMultiplier, 0.f, 1.f);
+	OnRotationSoundComponent->SetVolumeMultiplier(Volume);
+}
+
 void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
 {
 	if (!IsValid(TurretMesh)) return;
-	if (bInstantRotation) return RotateWithoutInterp(Location, DeltaSeconds);
 
-	return RotateWithInterp(Location, DeltaSeconds);
+	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
+	if (bInstantRotation)
+	{
+
+		RotateWithoutInterp(Location, DeltaSeconds);
+	}
+	else
+	{
+		RotateWithInterp(Location, DeltaSeconds);
+	}
+
+	const FRotator NewRotation = TurretMesh->GetComponentRotation();
+	const float RotationDifference = UKismetMathLibrary::Abs(NewRotation.Yaw - CurrentRotation.Yaw);
+	AdjustRotationSoundVolume(RotationDifference);
 }
 
 void ATurretPawn::TakeHit(float DamageAmount)
@@ -232,4 +281,6 @@ void ATurretPawn::BeginPlay()
 {
 	Super::BeginPlay();
 	SetupOnDeathDelegate();
+	AdjustRotationSoundVolume(0.f);
+	EnableRotationSound();
 }

@@ -32,6 +32,15 @@ class TOWEROFFENSE_API ATurretPawn : public APawn
 	UPROPERTY(EditAnywhere, Category = "Turret|VFX")
 	TObjectPtr<UParticleSystem> OnDeathEffect;
 
+	UPROPERTY(EditAnywhere, Category = "Turret|SFX")
+	TObjectPtr<USoundBase> OnDeathSound;
+
+	UPROPERTY(EditAnywhere, Category = "Turret|SFX")
+	TObjectPtr<UAudioComponent> OnRotationSoundComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Turret|SFX", meta = (ClampMin = "0.0"))
+	float RotationSoundVolumeMultiplier = 0.1f;
+
 protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> BaseMesh;
@@ -113,6 +122,12 @@ private:
 	void OnDeath();
 
 	void EmitOnDeathEffect() const;
+	void EmitOnDeathSFX() const;
+	void EmitOnDeathVFX() const;
+
+	void EnableRotationSound();
+	void AdjustRotationSoundVolume(const float RotationDifference);
+	void SetRotationSoundVolume(const float NewVolume);
 
 public:
 	ATurretPawn();

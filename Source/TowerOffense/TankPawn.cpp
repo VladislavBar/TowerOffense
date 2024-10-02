@@ -4,7 +4,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "NiagaraComponent.h"
 #include "TankPlayerController.h"
+#include "Components/AudioComponent.h"
 #include "GameFramework/SpectatorPawn.h"
+#include "Kismet/KismetMathLibrary.h"
 
 ATankPawn::ATankPawn()
 {
@@ -16,6 +18,10 @@ ATankPawn::ATankPawn()
 
 	VehicleSmokeEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("VehicleSmokeEffect"));
 	VehicleSmokeEffect->SetupAttachment(RootComponent);
+
+	MovementSoundComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("MovementSoundComponent"));
+	MovementSoundComponent->SetupAttachment(RootComponent);
+	MovementSoundComponent->bAutoActivate = false;
 }
 
 void ATankPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -131,12 +137,15 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 	const float AccelerationValue = FMath::InterpEaseIn(0.f, 1.f, AccelerationProgress, AccelerationExponent);
 	AddActorLocalOffset(FVector(Speed * AccelerationValue * AxisValue * World->GetDeltaSeconds(), 0.f, 0.f), true);
 	UpdateSmokeEffectSpeed(Speed * AccelerationValue);
+	AdjustMovementComponentVolumeToSpeed(AccelerationValue);
 }
 
 void ATankPawn::OnMoveStopped()
 {
 	ResetAccelerationDurationElapsed();
 	UpdateSmokeEffectSpeed(0.f);
+	SetupReduceMovementVolumeTimer();
+	
 }
 
 void ATankPawn::Turn(const FInputActionInstance& ActionData)
@@ -248,18 +257,76 @@ void ATankPawn::UpdateSmokeEffectSpeed(float SmokeSpeed)
 	VehicleSmokeEffect->SetFloatParameter("Speed", SmokeSpeed * SmokeSpeedModifier);
 }
 
+void ATankPawn::ActivateMovementSound()
+{
+	if (!IsValid(MovementSoundComponent)) return;
+
+	MovementSoundComponent->Activate();
+}
+
+void ATankPawn::AdjustMovementComponentVolumeToSpeed(const float NewSpeed)
+{
+	SetMovementSoundVolume(NewSpeed * MovementSoundVolumeMultiplier);
+}
+
+void ATankPawn::SetMovementSoundVolume(const float Volume)
+{
+	if (!IsValid(MovementSoundComponent)) return;
+
+	MovementSoundComponent->SetVolumeMultiplier(Volume);
+}
+
+void ATankPawn::ResetMomentSoundVolume()
+{
+	SetMovementSoundVolume(DefaultMovementSoundVolume);
+}
+
+void ATankPawn::SetupReduceMovementVolumeTimer()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	World->GetTimerManager().SetTimer(ReduceSpeedTimerHandle, this, &ATankPawn::ClearReduceSpeedTimer, MovementSoundReductionTime);
+
+	if (!IsValid(MovementSoundComponent)) return;
+	LastSoundVolume = MovementSoundComponent->VolumeMultiplier;
+}
+
+void ATankPawn::ClearReduceSpeedTimer()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	World->GetTimerManager().ClearTimer(ReduceSpeedTimerHandle);
+}
+
+void ATankPawn::ReduceVolumeOverTime()
+{
+	if (!ReduceSpeedTimerHandle.IsValid() || MovementSoundReductionTime <= KINDA_SMALL_NUMBER) return;
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	const float ElapsedTime = World->GetTimerManager().GetTimerElapsed(ReduceSpeedTimerHandle);
+	const float NewVolume = UKismetMathLibrary::FInterpTo(LastSoundVolume, 0.f, ElapsedTime / MovementSoundReductionTime, 1.f);
+	SetMovementSoundVolume(NewVolume);
+}
+
 void ATankPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
 	RotateTurretMeshByCursor(DeltaSeconds);
 	RefreshCooldownWidget();
+	ReduceVolumeOverTime();
 }
 
 void ATankPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	ResetMomentSoundVolume();
+	ActivateMovementSound();
 	HideCursor();
 }
 

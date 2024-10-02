@@ -53,6 +53,22 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "VFX")
 	TObjectPtr<UNiagaraComponent> VehicleSmokeEffect;
 
+	UPROPERTY(EditAnywhere, Category = "Turret|SFX")
+	TObjectPtr<UAudioComponent> MovementSoundComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFX", meta = (ClampMin = "0.0"))
+	float MovementSoundVolumeMultiplier = 0.1f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFX", meta = (ClampMin = "0.0"))
+	float DefaultMovementSoundVolume = 0.1f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFX", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MovementSoundReductionTime = 0.5;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFX", meta = (ClampMin = "0.0"))
+	float MovementSoundReductionExponent = 1.f;
+	float LastSoundVolume = 0.f;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement", meta = (ClampMin = "0.0"))
 	float AccelerationDuration = 2.f;
 
@@ -79,6 +95,8 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Death")
 	float SpectatorOffsetSpawnDistance = 100.f;
+
+	FTimerHandle ReduceSpeedTimerHandle;
 
 public:
 	float GetSpeed() const { return Speed; }
@@ -109,6 +127,14 @@ private:
 	void RefreshCooldownWidget();
 	void ResetAccelerationDurationElapsed();
 	void UpdateSmokeEffectSpeed(float SmokeSpeed);
+
+	void ActivateMovementSound();
+	void AdjustMovementComponentVolumeToSpeed(const float NewSpeed);
+	void SetMovementSoundVolume(const float Volume);
+	void ResetMomentSoundVolume();
+	void SetupReduceMovementVolumeTimer();
+	void ClearReduceSpeedTimer();
+	void ReduceVolumeOverTime();
 
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;

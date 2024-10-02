@@ -34,6 +34,9 @@ class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
 	TSubclassOf<ATurretPawn> EnemyClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "SFX")
+	TObjectPtr<USoundBase> AmbientSound;
+
 	FOnActorSpawned::FDelegate OnEnemySpawnedDelegate;
 	FOnActorDestroyed::FDelegate OnEnemyDestroyedDelegate;
 	FOnActorDestroyed::FDelegate OnPlayerDestroyedDelegate;
@@ -68,6 +71,7 @@ private:
 	void SetupStartDelay();
 	void SetupFinishDelay();
 	void SetupEndMatchDelay(FTimerDelegate::TMethodPtr<ATowerOffenseGameMode> InTimerMethod);
+	void SetupAmbientSound();
 
 	UFUNCTION()
 	void SetupOnPlayerLosesEndMatchTimer(AActor* Actor);
