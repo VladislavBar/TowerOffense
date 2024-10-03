@@ -20,6 +20,7 @@ void ATowerOffenseGameMode::BeginPlay()
 	SetupPostBeginPlayEnemiesCountUpdate();
 	SetupStartDelay();
 	SetupFinishDelay();
+	SetupAmbientSound();
 }
 
 void ATowerOffenseGameMode::SetupPostBeginPlayEnemiesCountUpdate()
@@ -116,6 +117,14 @@ void ATowerOffenseGameMode::SetupEndMatchDelay(FTimerDelegate::TMethodPtr<ATower
 	if (!IsValid(World)) return;
 
 	World->GetTimerManager().SetTimer(MatchEndedTimerHandle, this, InTimerMethod, MatchEndDelayTime, false);
+}
+
+void ATowerOffenseGameMode::SetupAmbientSound()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	UGameplayStatics::SpawnSoundAtLocation(World, AmbientSound, FVector::ZeroVector);
 }
 
 void ATowerOffenseGameMode::SetupOnPlayerLosesEndMatchTimer(AActor* Actor)
