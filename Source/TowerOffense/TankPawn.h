@@ -93,6 +93,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "VFX")
 	float SmokeSpeedModifier = 0.f;
 
+	UPROPERTY(EditAnywhere, Category = "VFX")
+	FCameraShakeData OnFireCameraShakeData;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Death")
 	float SpectatorOffsetSpawnDistance = 100.f;
 
@@ -136,10 +139,13 @@ private:
 	void ClearReduceSpeedTimer();
 	void ReduceVolumeOverTime();
 
+	void PlayOnFireCameraShake() const;
+
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 	virtual void SetActorTickEnabled(bool bEnabled) override;
 	virtual void Destroyed() override;
+	virtual void OnSuccessfulFire() override;
 
 public:
 	ATankPawn();

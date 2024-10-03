@@ -9,7 +9,9 @@ public class TowerOffense : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PublicDependencyModuleNames.AddRange(new string[]
-			{ "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "Niagara", "NiagaraCore" });
+		{
+			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "Niagara", "NiagaraCore", "GameplayCameras"
+		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "AIModule" });
 

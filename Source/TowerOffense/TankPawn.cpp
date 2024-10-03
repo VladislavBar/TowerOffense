@@ -6,6 +6,7 @@
 #include "TankPlayerController.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/SpectatorPawn.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
 ATankPawn::ATankPawn()
@@ -311,6 +312,17 @@ void ATankPawn::ReduceVolumeOverTime()
 	SetMovementSoundVolume(NewVolume);
 }
 
+void ATankPawn::PlayOnFireCameraShake() const
+{
+	if (!IsValid(OnFireCameraShakeData.CameraShakeClass)) return;
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	UGameplayStatics::PlayWorldCameraShake(World, OnFireCameraShakeData.CameraShakeClass, GetActorLocation(), OnFireCameraShakeData.InnerRadius,
+		OnFireCameraShakeData.OuterRadius, OnFireCameraShakeData.Falloff);
+}
+
 void ATankPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -363,6 +375,12 @@ void ATankPawn::Destroyed()
 	if (!IsValid(NewActor)) return;
 
 	PlayerController->Possess(NewActor);
+}
+void ATankPawn::OnSuccessfulFire()
+{
+	Super::OnSuccessfulFire();
+
+	PlayOnFireCameraShake();
 }
 
 APlayerController* ATankPawn::GetPlayerController() const
