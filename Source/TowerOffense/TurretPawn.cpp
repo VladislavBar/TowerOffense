@@ -82,6 +82,7 @@ void ATurretPawn::Fire()
 	Projectile->SetDamage(Damage);
 
 	DisableFire();
+	OnSuccessfulFire();
 
 	if (IsValid(OnFireEffectComponent))
 	{
@@ -167,6 +168,7 @@ void ATurretPawn::EmitOnDeathEffect() const
 {
 	EmitOnDeathSFX();
 	EmitOnDeathVFX();
+	EmitOnDeathCameraShake();
 }
 
 void ATurretPawn::EmitOnDeathVFX() const
@@ -177,6 +179,17 @@ void ATurretPawn::EmitOnDeathVFX() const
 	if (!IsValid(World)) return;
 
 	UGameplayStatics::SpawnEmitterAtLocation(World, OnDeathEffect, GetActorLocation(), FRotator::ZeroRotator);
+}
+
+void ATurretPawn::EmitOnDeathCameraShake() const
+{
+	if (!IsValid(OnDeathCameraShakeData.CameraShakeClass)) return;
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	UGameplayStatics::PlayWorldCameraShake(World, OnDeathCameraShakeData.CameraShakeClass, GetActorLocation(), OnDeathCameraShakeData.InnerRadius,
+		OnDeathCameraShakeData.OuterRadius, OnDeathCameraShakeData.Falloff);
 }
 
 void ATurretPawn::EmitOnDeathSFX() const

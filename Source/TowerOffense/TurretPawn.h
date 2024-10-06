@@ -8,6 +8,24 @@
 
 #include "TurretPawn.generated.h"
 
+USTRUCT()
+struct FCameraShakeData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Camera Shake")
+	TSubclassOf<UCameraShakeBase> CameraShakeClass;
+
+	UPROPERTY(EditAnywhere, Category = "Camera Shake")
+	float InnerRadius = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera Shake")
+	float OuterRadius = 10.f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera Shake")
+	float Falloff = 1.f;
+};
+
 UCLASS()
 class TOWEROFFENSE_API ATurretPawn : public APawn
 {
@@ -37,6 +55,9 @@ class TOWEROFFENSE_API ATurretPawn : public APawn
 
 	UPROPERTY(EditAnywhere, Category = "Turret|SFX")
 	TObjectPtr<UAudioComponent> OnRotationSoundComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Turret|VFX")
+	FCameraShakeData OnDeathCameraShakeData;
 
 	UPROPERTY(EditAnywhere, Category = "Turret|SFX", meta = (ClampMin = "0.0"))
 	float RotationSoundVolumeMultiplier = 0.1f;
@@ -97,6 +118,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void Fire();
+	virtual void OnSuccessfulFire(){};
 	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
 	void TakeHit(float DamageAmount);
 
@@ -124,10 +146,10 @@ private:
 	void EmitOnDeathEffect() const;
 	void EmitOnDeathSFX() const;
 	void EmitOnDeathVFX() const;
+	void EmitOnDeathCameraShake() const;
 
 	void EnableRotationSound();
 	void AdjustRotationSoundVolume(const float RotationDifference);
-	void SetRotationSoundVolume(const float NewVolume);
 
 public:
 	ATurretPawn();
