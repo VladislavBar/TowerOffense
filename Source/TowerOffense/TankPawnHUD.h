@@ -87,8 +87,8 @@ class TOWEROFFENSE_API UTankPawnHUD : public UUserWidget
 
 public:
 	void SetupWidgets();
-	void HideCooldownWidget() const;
-	void ShowCooldownWidget() const;
+	void HideCooldownWidget() const { HideComponent(&UTankPawnHUD::CooldownWidget); };
+	void ShowCooldownWidget() const { ShowComponent(&UTankPawnHUD::CooldownWidget); };
 };
 
 template <typename WidgetT>

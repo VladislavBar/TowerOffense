@@ -24,6 +24,11 @@ void UTankPawnHUD::ResetHealthBarHideTimer()
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
+	if (HealthBarHideTimerHandle.IsValid() && World->GetTimerManager().IsTimerActive(HealthBarHideTimerHandle))
+	{
+		World->GetTimerManager().ClearTimer(HealthBarHideTimerHandle);
+	}
+
 	World->GetTimerManager().SetTimer(HealthBarHideTimerHandle, this, &UTankPawnHUD::HideHealthBar, HealthBarHideTime, false);
 }
 
@@ -37,6 +42,11 @@ void UTankPawnHUD::ResetAmmoWidgetHideTimer()
 
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
+
+	if (AmmoWidgetHideTimerHandle.IsValid() && World->GetTimerManager().IsTimerActive(AmmoWidgetHideTimerHandle))
+	{
+		World->GetTimerManager().ClearTimer(AmmoWidgetHideTimerHandle);
+	}
 
 	World->GetTimerManager().SetTimer(AmmoWidgetHideTimerHandle, this, &UTankPawnHUD::HideAmmoWidget, AmmoWidgetHideTime, false);
 }
@@ -147,14 +157,4 @@ void UTankPawnHUD::OnHitTaken(const FHitTakenData& HitTakenData)
 {
 	ShowComponent(&UTankPawnHUD::HealthWidget);
 	ResetHealthBarHideTimer();
-}
-
-void UTankPawnHUD::HideCooldownWidget() const
-{
-	HideComponent(&UTankPawnHUD::CooldownWidget);
-}
-
-void UTankPawnHUD::ShowCooldownWidget() const
-{
-	ShowComponent(&UTankPawnHUD::CooldownWidget);
 }

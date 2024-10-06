@@ -17,9 +17,6 @@ public:
 	void SetCooldownText(const float RemainingCooldownTime);
 	virtual void NativeConstruct() override;
 
-	void HideCooldownText() const;
-	void ShowCooldownText() const;
-
 private:
 	void SetupOnCooldownTickDelegate();
 };
