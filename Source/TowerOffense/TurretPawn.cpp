@@ -160,7 +160,8 @@ void ATurretPawn::SetupOnDeathDelegate()
 {
 	if (!IsValid(HealthComponent)) return;
 
-	HealthComponent->OnDeath.AddUObject(this, &ATurretPawn::OnDeath);
+	OnDeathDelegate.BindUObject(this, &ATurretPawn::OnDeath);
+	OnDeathDelegateHandle = HealthComponent->AddOnDeathHandler(OnDeathDelegate);
 }
 
 void ATurretPawn::OnDeath()

@@ -1,5 +1,7 @@
 #include "AmmoComponent.h"
 
+DEFINE_LOG_CATEGORY(LogAmmoComponent);
+
 UAmmoComponent::UAmmoComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -39,6 +41,12 @@ void UAmmoComponent::ScheduleOnAmmoInitializedNotification() const
 
 void UAmmoComponent::ScheduleAmmoReplenishTimer()
 {
+	if (ReplenishTime <= KINDA_SMALL_NUMBER)
+	{
+		UE_LOG(LogAmmoComponent, Warning, TEXT("ReplenishTime is too small!"));
+		return;
+	}
+	
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 

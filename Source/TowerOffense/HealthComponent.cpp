@@ -29,3 +29,13 @@ void UHealthComponent::SetupHealth()
 		OnDeath.Broadcast();
 	}
 }
+
+FDelegateHandle UHealthComponent::AddOnHitTakenHandler(const FOnHitTakenDelegate::FDelegate& Delegate)
+{
+	return OnHitTaken.Add(Delegate);
+}
+
+FDelegateHandle UHealthComponent::AddOnDeathHandler(const FOnDeathDelegate::FDelegate& Delegate)
+{
+	return OnDeath.Add(Delegate);
+}

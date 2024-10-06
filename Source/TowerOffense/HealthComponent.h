@@ -31,14 +31,16 @@ class TOWEROFFENSE_API UHealthComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:
 	FOnHitTakenDelegate OnHitTaken;
 	FOnDeathDelegate OnDeath;
 
-private:
 	UPROPERTY(EditAnywhere, Category = "Health", meta = (ClampMin = "0.0"))
 	float MaxHealth = 100.f;
 	float HealthPoints = 100.f;
+
+private:
+	virtual void BeginPlay() override;
+	void SetupHealth();
 
 public:
 	float GetHealthPoints() const { return HealthPoints; }
@@ -46,7 +48,6 @@ public:
 
 	void TakeHit(float Damage);
 
-private:
-	virtual void BeginPlay() override;
-	void SetupHealth();
+	FDelegateHandle AddOnHitTakenHandler(const FOnHitTakenDelegate::FDelegate& Delegate);
+	FDelegateHandle AddOnDeathHandler(const FOnDeathDelegate::FDelegate& Delegate);
 };

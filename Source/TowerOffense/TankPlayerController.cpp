@@ -190,7 +190,7 @@ void ATankPlayerController::HideCooldownWidget() const
 	TankPawnHUD->HideCooldownWidget();
 }
 
-void ATankPlayerController::OnReplenishFinishes(const float NewAmmo) const
+void ATankPlayerController::OnReplenishFinishes(const int32 NewAmmo) const
 {
 	ShowCooldownWidget();
 }

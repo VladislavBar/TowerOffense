@@ -76,7 +76,7 @@ private:
 	void ClearLoseScreenHUD() const;
 
 	void HideCooldownWidget() const;
-	void OnReplenishFinishes(const float NewAmmo) const;
+	void OnReplenishFinishes(const int32 NewAmmo) const;
 	void ShowCooldownWidget() const;
 
 	void PauseGame() const;

@@ -4,12 +4,14 @@
 #include "Components/ActorComponent.h"
 #include "AmmoComponent.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogAmmoComponent, Log, All);
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAmmoInitializedDelegate, const int32);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAmmoChangedDelegate, const int32);
 
 DECLARE_MULTICAST_DELEGATE(FOnAmmoReplenishStartsDelegate);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAmmoReplenishRemainingTimeDelegate, const float);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnAmmoReplenishFinishesDelegate, const float);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAmmoReplenishFinishesDelegate, const int32);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TOWEROFFENSE_API UAmmoComponent : public UActorComponent

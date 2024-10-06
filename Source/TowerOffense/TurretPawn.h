@@ -107,6 +107,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Turret|Fire", meta = (ClampMin = "0.0"))
 	float ProjectileSpeed = 7000.f;
 
+	FOnDeathDelegate::FDelegate OnDeathDelegate;
+	FDelegateHandle OnDeathDelegateHandle;
+
 protected:
 	UPROPERTY(EditAnywhere, Category = "Turret Rotation", meta = (ClampMin = "0.0"))
 	float RotationInterpExponent = 2.f;
