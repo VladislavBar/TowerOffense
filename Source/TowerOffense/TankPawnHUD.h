@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AmmoWidget.h"
 #include "CooldownWidget.h"
 #include "CrosshairWidget.h"
 #include "DelayedStartWidget.h"
@@ -29,6 +30,9 @@ class TOWEROFFENSE_API UTankPawnHUD : public UUserWidget
 	UPROPERTY(EditInstanceOnly, meta = (BindWidget))
 	TObjectPtr<UDelayedStartWidget> DelayedStartWidget;
 
+	UPROPERTY(EditInstanceOnly, meta = (BindWidget))
+	TObjectPtr<UAmmoWidget> AmmoWidget;
+
 	virtual void NativeConstruct() override;
 
 	void SetupOnGamePreparing();
@@ -36,4 +40,6 @@ class TOWEROFFENSE_API UTankPawnHUD : public UUserWidget
 
 public:
 	void SetupWidgets();
+	void HideCooldownWidget() const;
+	void ShowCooldownWidget() const;
 };

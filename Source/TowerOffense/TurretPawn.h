@@ -118,7 +118,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void Fire();
-	virtual void OnSuccessfulFire(){};
+
 	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
 	void TakeHit(float DamageAmount);
 
@@ -126,6 +126,9 @@ protected:
 	void SetTargetLocation(const FVector& Location);
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
+
+	virtual bool CanFire() const;
+	virtual void OnSuccessfulFire(){};
 
 private:
 	void SetupTeamColorDynamicMaterial(UStaticMeshComponent* Mesh);

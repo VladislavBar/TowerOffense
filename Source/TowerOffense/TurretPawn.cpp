@@ -65,9 +65,14 @@ void ATurretPawn::DrawDebugAtSpawnPointLocation() const
 	DrawDebugSphere(World, GetProjectileSpawnLocation(), ProjectileDebugSphereRadius, ProjectileDebugSphereSegments, ProjectileDebugSphereColor);
 }
 
+bool ATurretPawn::CanFire() const
+{
+	return bCanFire && IsValid(ProjectileClass) && IsValid(ProjectileSpawnPoint);
+}
+
 void ATurretPawn::Fire()
 {
-	if (!bCanFire || !IsValid(ProjectileClass) || !IsValid(ProjectileSpawnPoint)) return;
+	if (!CanFire()) return;
 
 	UWorld* World = GetWorld();
 	if (!IsValid(World)) return;

@@ -26,6 +26,20 @@ void UCooldownWidget::NativeConstruct()
 	SetupOnCooldownTickDelegate();
 }
 
+void UCooldownWidget::HideCooldownText() const
+{
+	if (!IsValid(CooldownText)) return;
+
+	CooldownText->SetVisibility(ESlateVisibility::Hidden);
+}
+
+void UCooldownWidget::ShowCooldownText() const
+{
+	if (!IsValid(CooldownText)) return;
+
+	CooldownText->SetVisibility(ESlateVisibility::Visible);
+}
+
 void UCooldownWidget::SetupOnCooldownTickDelegate()
 {
 	ATankPawn* Owner = Cast<ATankPawn>(GetOwningPlayerPawn());

@@ -47,3 +47,17 @@ void UTankPawnHUD::SetupOnGameStarted()
 		DelayedStartWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
+
+void UTankPawnHUD::HideCooldownWidget() const
+{
+	if (!IsValid(CooldownWidget)) return;
+
+	CooldownWidget->SetVisibility(ESlateVisibility::Hidden);
+}
+
+void UTankPawnHUD::ShowCooldownWidget() const
+{
+	if (!IsValid(CooldownWidget)) return;
+
+	CooldownWidget->SetVisibility(ESlateVisibility::Visible);
+}
