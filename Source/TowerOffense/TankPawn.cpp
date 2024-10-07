@@ -124,12 +124,12 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 
 	AccelerationDurationElapsed = ActionData.GetElapsedTime();
 
-	if (bIsMovingForward && AxisValue < 0.f || !bIsMovingForward && AxisValue > 0.f)
+	if (bIsMovingForward && AxisValue < 0.f || !bIsMovingForward && AxisValue >= 0.f)
 	{
 		LastDirectionChangedTime = AccelerationDurationElapsed;
 	}
 
-	bIsMovingForward = AxisValue > 0.f;
+	bIsMovingForward = AxisValue >= 0.f;
 	if (AccelerationDuration <= KINDA_SMALL_NUMBER)
 	{
 		AddActorLocalOffset(FVector(Speed * AxisValue, 0.f, 0.f));
@@ -148,11 +148,14 @@ void ATankPawn::OnMoveStopped()
 	ResetAccelerationDurationElapsed();
 	UpdateSmokeEffectSpeed(0.f);
 	SetupReduceMovementVolumeTimer();
+	bIsMovingForward = true;
 }
 
 void ATankPawn::Turn(const FInputActionInstance& ActionData)
 {
-	const float AxisValue = ActionData.GetValue().Get<float>();
+	float AxisValue = ActionData.GetValue().Get<float>();
+	if (!bIsMovingForward) AxisValue *= -1.f;
+
 	AddActorLocalRotation(FRotator(0.f, AxisValue * RotationRate, 0.f));
 }
 

@@ -79,7 +79,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement", meta = (ClampMin = "0.0"))
 	float Speed = 5.f;
 	float AccelerationDurationElapsed = 0.f;
-	bool bIsMovingForward = false;
+	bool bIsMovingForward = true;
 	float LastDirectionChangedTime = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement")
