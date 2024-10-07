@@ -21,14 +21,19 @@ class TOWEROFFENSE_API UHealthWidget : public UUserWidget
 	UPROPERTY()
 	AActor* Owner;
 
+	FOnHitTakenDelegate::FDelegate OnHitTakenDelegate;
+	FDelegateHandle OnHitTakenDelegateHandle;
+
 	bool SetupHealthComponentDelegate(UHealthComponent* HealthComponent);
 	bool SetupHealthComponentAsWidgetComponentDelegate();
 	bool SetupHealthComponentAsViewportDelegate();
 	void TrySetupHealthComponentDelegate();
 	void UpdateHealthProgressBar(const FHitTakenData& HitTakenData);
-	virtual void NativeConstruct() override;
+
 	void SetCurrentHealthBar(const float CurrentHealth, const float MaxHealth);
 	void SetCurrentHealthText(const float CurrentHealth, const float MaxHealth);
+
+	virtual void NativeConstruct() override;
 
 public:
 	void SetOwner(AActor* NewOwner) { Owner = NewOwner; }

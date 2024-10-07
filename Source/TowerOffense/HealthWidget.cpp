@@ -9,7 +9,8 @@ bool UHealthWidget::SetupHealthComponentDelegate(UHealthComponent* HealthCompone
 {
 	if (!IsValid(HealthComponent)) return false;
 
-	HealthComponent->OnHitTaken.AddUObject(this, &UHealthWidget::UpdateHealthProgressBar);
+	OnHitTakenDelegate.BindUObject(this, &UHealthWidget::UpdateHealthProgressBar);
+	OnHitTakenDelegateHandle = HealthComponent->AddOnHitTakenHandler(OnHitTakenDelegate);
 	SetCurrentHealthBar(HealthComponent->GetHealthPoints(), HealthComponent->GetMaxHealth());
 	SetCurrentHealthText(HealthComponent->GetHealthPoints(), HealthComponent->GetMaxHealth());
 

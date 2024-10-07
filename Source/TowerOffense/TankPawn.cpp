@@ -23,6 +23,8 @@ ATankPawn::ATankPawn()
 	MovementSoundComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("MovementSoundComponent"));
 	MovementSoundComponent->SetupAttachment(RootComponent);
 	MovementSoundComponent->bAutoActivate = false;
+
+	AmmoComponent = CreateDefaultSubobject<UAmmoComponent>(TEXT("AmmoComponent"));
 }
 
 void ATankPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -381,6 +383,14 @@ void ATankPawn::OnSuccessfulFire()
 	Super::OnSuccessfulFire();
 
 	PlayOnFireCameraShake();
+	if (IsValid(AmmoComponent))
+	{
+		AmmoComponent->Fire();
+	}
+}
+bool ATankPawn::CanFire() const
+{
+	return IsValid(AmmoComponent) && AmmoComponent->CanShoot() && Super::CanFire();
 }
 
 APlayerController* ATankPawn::GetPlayerController() const

@@ -16,5 +16,7 @@ class TOWEROFFENSE_API UCooldownWidget : public UUserWidget
 public:
 	void SetCooldownText(const float RemainingCooldownTime);
 	virtual void NativeConstruct() override;
+
+private:
 	void SetupOnCooldownTickDelegate();
 };

@@ -37,11 +37,15 @@ private:
 	FPlayerLosesDelegate::FDelegate OnPlayerLosesDelegate;
 	FOnDelayStartDelegate::FDelegate OnTowerOffenseGameModeLoadedDelegate;
 	FOnDelayFinishDelegate::FDelegate OnTowerOffenseGameModeStartedDelegate;
+	FOnAmmoReplenishStartsDelegate::FDelegate OnReplenishStartsDelegate;
+	FOnAmmoReplenishFinishesDelegate::FDelegate OnReplenishFinishesDelegate;
 
 	FDelegateHandle OnPlayerWinsDelegateHandle;
 	FDelegateHandle OnPlayersLosesDelegateHandle;
 	FDelegateHandle OnTowerOffenseGameModeLoadedDelegateHandle;
 	FDelegateHandle OnTowerOffenseGameModeStartedDelegateHandle;
+	FDelegateHandle OnAmmoReplenishStartsDelegateHandle;
+	FDelegateHandle OnAmmoReplenishFinishesDelegateHandle;
 
 	virtual void BeginPlay() override;
 	virtual void Tick(const float DeltaSeconds) override;
@@ -60,13 +64,20 @@ private:
 	void SetupOnWinDelegate();
 	void SetupOnTowerOffenseGameModeLoadedDelegate();
 	void SetupOnTowerOffenseGameModeStartedDelegate();
+	void SetupOnAmmoReplenishStartsDelegate();
+	void SetupOnAmmoReplenishFinishesDelegate();
 
 	void OnPlayerWins();
 	void OnPlayerLoses();
+
 	void ClearTankPawnHUD() const;
 	void ClearEndScreenHUD() const;
 	void ClearWinScreenHUD() const;
 	void ClearLoseScreenHUD() const;
+
+	void HideCooldownWidget() const;
+	void OnReplenishFinishes(const int32 NewAmmo) const;
+	void ShowCooldownWidget() const;
 
 	void PauseGame() const;
 	void ResumeGame() const;

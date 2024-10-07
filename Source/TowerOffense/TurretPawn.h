@@ -107,6 +107,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Turret|Fire", meta = (ClampMin = "0.0"))
 	float ProjectileSpeed = 7000.f;
 
+	FOnDeathDelegate::FDelegate OnDeathDelegate;
+	FDelegateHandle OnDeathDelegateHandle;
+
 protected:
 	UPROPERTY(EditAnywhere, Category = "Turret Rotation", meta = (ClampMin = "0.0"))
 	float RotationInterpExponent = 2.f;
@@ -118,7 +121,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void Fire();
-	virtual void OnSuccessfulFire(){};
+
 	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
 	void TakeHit(float DamageAmount);
 
@@ -126,6 +129,9 @@ protected:
 	void SetTargetLocation(const FVector& Location);
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
+
+	virtual bool CanFire() const;
+	virtual void OnSuccessfulFire(){};
 
 private:
 	void SetupTeamColorDynamicMaterial(UStaticMeshComponent* Mesh);

@@ -1,5 +1,6 @@
 #include "TankPlayerController.h"
 
+#include "TankPawn.h"
 #include "TowerOffenseGameMode.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -80,6 +81,8 @@ void ATankPlayerController::SetupDelegates()
 	SetupOnWinDelegate();
 	SetupOnTowerOffenseGameModeLoadedDelegate();
 	SetupOnTowerOffenseGameModeStartedDelegate();
+	SetupOnAmmoReplenishStartsDelegate();
+	SetupOnAmmoReplenishFinishesDelegate();
 }
 
 void ATankPlayerController::SetupOnLoseDelegate()
@@ -118,6 +121,30 @@ void ATankPlayerController::SetupOnTowerOffenseGameModeStartedDelegate()
 	OnTowerOffenseGameModeStartedDelegateHandle = TowerOffenseGameMode->AddDelayFinishHandler(OnTowerOffenseGameModeStartedDelegate);
 }
 
+void ATankPlayerController::SetupOnAmmoReplenishStartsDelegate()
+{
+	const ATankPawn* TankPawn = Cast<ATankPawn>(GetPawn());
+	if (!IsValid(TankPawn)) return;
+
+	UAmmoComponent* AmmoComponent = TankPawn->FindComponentByClass<UAmmoComponent>();
+	if (!IsValid(AmmoComponent)) return;
+
+	OnReplenishStartsDelegate.BindUObject(this, &ATankPlayerController::HideCooldownWidget);
+	AmmoComponent->AddAmmoReplenishStarts(OnReplenishStartsDelegate);
+}
+
+void ATankPlayerController::SetupOnAmmoReplenishFinishesDelegate()
+{
+	const ATankPawn* TankPawn = Cast<ATankPawn>(GetPawn());
+	if (!IsValid(TankPawn)) return;
+
+	UAmmoComponent* AmmoComponent = TankPawn->FindComponentByClass<UAmmoComponent>();
+	if (!IsValid(AmmoComponent)) return;
+
+	OnReplenishFinishesDelegate.BindUObject(this, &ATankPlayerController::OnReplenishFinishes);
+	AmmoComponent->AddAmmoReplenishFinishes(OnReplenishFinishesDelegate);
+}
+
 void ATankPlayerController::OnPlayerWins()
 {
 	ClearTankPawnHUD();
@@ -154,6 +181,25 @@ void ATankPlayerController::ClearLoseScreenHUD() const
 	if (!IsValid(LoseScreen)) return;
 
 	LoseScreen->RemoveFromParent();
+}
+
+void ATankPlayerController::HideCooldownWidget() const
+{
+	if (!IsValid(TankPawnHUD)) return;
+
+	TankPawnHUD->HideCooldownWidget();
+}
+
+void ATankPlayerController::OnReplenishFinishes(const int32 NewAmmo) const
+{
+	ShowCooldownWidget();
+}
+
+void ATankPlayerController::ShowCooldownWidget() const
+{
+	if (!IsValid(TankPawnHUD)) return;
+
+	TankPawnHUD->ShowCooldownWidget();
 }
 
 void ATankPlayerController::PauseGame() const

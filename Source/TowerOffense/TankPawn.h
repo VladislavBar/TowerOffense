@@ -2,6 +2,7 @@
 
 #include "Camera/CameraComponent.h"
 #include "CoreMinimal.h"
+#include "AmmoComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
@@ -99,6 +100,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Death")
 	float SpectatorOffsetSpawnDistance = 100.f;
 
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UAmmoComponent> AmmoComponent;
+
 	FTimerHandle ReduceSpeedTimerHandle;
 
 public:
@@ -146,6 +150,7 @@ private:
 	virtual void SetActorTickEnabled(bool bEnabled) override;
 	virtual void Destroyed() override;
 	virtual void OnSuccessfulFire() override;
+	virtual bool CanFire() const override;
 
 public:
 	ATankPawn();
