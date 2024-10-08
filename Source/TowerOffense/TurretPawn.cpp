@@ -293,7 +293,6 @@ void ATurretPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	RotateTurretMesh(DeltaSeconds);
-	DrawDebugAtSpawnPointLocation();
 }
 
 void ATurretPawn::BeginPlay()

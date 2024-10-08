@@ -1,5 +1,6 @@
 #include "HealthBarWidgetComponent.h"
 
+#if WITH_EDITOR
 void UHealthBarWidgetComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	if (!IsValid(HealthWidgetClass)) return Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -12,6 +13,7 @@ void UHealthBarWidgetComponent::PostEditChangeProperty(FPropertyChangedEvent& Pr
 
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }
+#endif
 
 void UHealthBarWidgetComponent::BeginPlay()
 {

@@ -197,7 +197,6 @@ void ATankPawn::FindAndLockTarget()
 
 	FHitResult HitResult;
 	FindTarget(PlayerController, HitResult);
-	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Green, false, 5.f);
 	SetTargetLocation(HitResult.Location);
 	bLockTarget = true;
 
@@ -230,11 +229,6 @@ void ATankPawn::RotateTurretMeshByCursor(const float DeltaSeconds)
 	FHitResult HitResult;
 	FindTarget(PlayerController, HitResult);
 	RotateTurretMeshToLocation(DeltaSeconds, HitResult.Location);
-
-	const UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
-
-	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Red, false, 0.f);
 }
 
 void ATankPawn::RefreshCooldownWidget()
@@ -260,6 +254,11 @@ void ATankPawn::UpdateSmokeEffectSpeed(float SmokeSpeed)
 	if (!IsValid(VehicleSmokeEffect)) return;
 
 	VehicleSmokeEffect->SetFloatParameter("Speed", SmokeSpeed * SmokeSpeedModifier);
+}
+
+void ATankPawn::ResetCooldownWidget() const
+{
+	OnCooldownTickDelegate.Broadcast(0.f);
 }
 
 void ATankPawn::ActivateMovementSound()
@@ -295,6 +294,14 @@ void ATankPawn::SetupReduceMovementVolumeTimer()
 
 	if (!IsValid(MovementSoundComponent)) return;
 	LastSoundVolume = MovementSoundComponent->VolumeMultiplier;
+}
+
+void ATankPawn::ScheduleCooldownResetOnNextTick()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	World->GetTimerManager().SetTimerForNextTick(this, &ATankPawn::ResetCooldownWidget);
 }
 
 void ATankPawn::ClearReduceSpeedTimer()
@@ -344,6 +351,7 @@ void ATankPawn::BeginPlay()
 	ResetMomentSoundVolume();
 	ActivateMovementSound();
 	HideCursor();
+	ScheduleCooldownResetOnNextTick();
 }
 
 void ATankPawn::SetActorTickEnabled(bool bEnabled)

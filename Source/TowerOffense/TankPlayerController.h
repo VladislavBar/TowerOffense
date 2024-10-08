@@ -1,5 +1,7 @@
 #pragma once
 
+#include <typeinfo>
+
 #include "CoreMinimal.h"
 #include "EndScreenHUD.h"
 #include "TankPawnHUD.h"

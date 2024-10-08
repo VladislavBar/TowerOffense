@@ -19,6 +19,7 @@ class TOWEROFFENSE_API ATankPawn : public ATurretPawn
 
 public:
 	FOnCooldownTickDelegate OnCooldownTickDelegate;
+	
 
 private:
 	UPROPERTY(EditDefaultsOnly)
@@ -134,12 +135,14 @@ private:
 	void RefreshCooldownWidget();
 	void ResetAccelerationDurationElapsed();
 	void UpdateSmokeEffectSpeed(float SmokeSpeed);
+	void ResetCooldownWidget() const;
 
 	void ActivateMovementSound();
 	void AdjustMovementComponentVolumeToSpeed(const float NewSpeed);
 	void SetMovementSoundVolume(const float Volume);
 	void ResetMomentSoundVolume();
 	void SetupReduceMovementVolumeTimer();
+	void ScheduleCooldownResetOnNextTick();
 	void ClearReduceSpeedTimer();
 	void ReduceVolumeOverTime();
 
