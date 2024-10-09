@@ -153,10 +153,13 @@ void ATankPawn::OnMoveStopped()
 
 void ATankPawn::Turn(const FInputActionInstance& ActionData)
 {
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+	
 	float AxisValue = ActionData.GetValue().Get<float>();
 	if (!bIsMovingForward) AxisValue *= -1.f;
 
-	AddActorLocalRotation(FRotator(0.f, AxisValue * RotationRate, 0.f));
+	AddActorLocalRotation(FRotator(0.f, AxisValue * RotationRate * World->GetDeltaSeconds(), 0.f));
 }
 
 void ATankPawn::RotateCamera(const FInputActionInstance& ActionData)
