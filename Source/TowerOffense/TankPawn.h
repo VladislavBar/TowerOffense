@@ -19,6 +19,7 @@ class TOWEROFFENSE_API ATankPawn : public ATurretPawn
 
 public:
 	FOnCooldownTickDelegate OnCooldownTickDelegate;
+	
 
 private:
 	UPROPERTY(EditDefaultsOnly)
@@ -79,7 +80,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement", meta = (ClampMin = "0.0"))
 	float Speed = 5.f;
 	float AccelerationDurationElapsed = 0.f;
-	bool bIsMovingForward = false;
+	bool bIsMovingForward = true;
 	float LastDirectionChangedTime = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement")
@@ -134,12 +135,14 @@ private:
 	void RefreshCooldownWidget();
 	void ResetAccelerationDurationElapsed();
 	void UpdateSmokeEffectSpeed(float SmokeSpeed);
+	void ResetCooldownWidget() const;
 
 	void ActivateMovementSound();
 	void AdjustMovementComponentVolumeToSpeed(const float NewSpeed);
 	void SetMovementSoundVolume(const float Volume);
 	void ResetMomentSoundVolume();
 	void SetupReduceMovementVolumeTimer();
+	void ScheduleCooldownResetOnNextTick();
 	void ClearReduceSpeedTimer();
 	void ReduceVolumeOverTime();
 

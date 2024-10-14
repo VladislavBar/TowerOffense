@@ -124,12 +124,12 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 
 	AccelerationDurationElapsed = ActionData.GetElapsedTime();
 
-	if (bIsMovingForward && AxisValue < 0.f || !bIsMovingForward && AxisValue > 0.f)
+	if (bIsMovingForward && AxisValue < 0.f || !bIsMovingForward && AxisValue >= 0.f)
 	{
 		LastDirectionChangedTime = AccelerationDurationElapsed;
 	}
 
-	bIsMovingForward = AxisValue > 0.f;
+	bIsMovingForward = AxisValue >= 0.f;
 	if (AccelerationDuration <= KINDA_SMALL_NUMBER)
 	{
 		AddActorLocalOffset(FVector(Speed * AxisValue, 0.f, 0.f));
@@ -148,12 +148,18 @@ void ATankPawn::OnMoveStopped()
 	ResetAccelerationDurationElapsed();
 	UpdateSmokeEffectSpeed(0.f);
 	SetupReduceMovementVolumeTimer();
+	bIsMovingForward = true;
 }
 
 void ATankPawn::Turn(const FInputActionInstance& ActionData)
 {
-	const float AxisValue = ActionData.GetValue().Get<float>();
-	AddActorLocalRotation(FRotator(0.f, AxisValue * RotationRate, 0.f));
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+	
+	float AxisValue = ActionData.GetValue().Get<float>();
+	if (!bIsMovingForward) AxisValue *= -1.f;
+
+	AddActorLocalRotation(FRotator(0.f, AxisValue * RotationRate * World->GetDeltaSeconds(), 0.f));
 }
 
 void ATankPawn::RotateCamera(const FInputActionInstance& ActionData)
@@ -194,7 +200,6 @@ void ATankPawn::FindAndLockTarget()
 
 	FHitResult HitResult;
 	FindTarget(PlayerController, HitResult);
-	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Green, false, 5.f);
 	SetTargetLocation(HitResult.Location);
 	bLockTarget = true;
 
@@ -227,11 +232,6 @@ void ATankPawn::RotateTurretMeshByCursor(const float DeltaSeconds)
 	FHitResult HitResult;
 	FindTarget(PlayerController, HitResult);
 	RotateTurretMeshToLocation(DeltaSeconds, HitResult.Location);
-
-	const UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
-
-	DrawDebugSphere(GetWorld(), HitResult.Location, 50.f, 12, FColor::Red, false, 0.f);
 }
 
 void ATankPawn::RefreshCooldownWidget()
@@ -257,6 +257,11 @@ void ATankPawn::UpdateSmokeEffectSpeed(float SmokeSpeed)
 	if (!IsValid(VehicleSmokeEffect)) return;
 
 	VehicleSmokeEffect->SetFloatParameter("Speed", SmokeSpeed * SmokeSpeedModifier);
+}
+
+void ATankPawn::ResetCooldownWidget() const
+{
+	OnCooldownTickDelegate.Broadcast(0.f);
 }
 
 void ATankPawn::ActivateMovementSound()
@@ -292,6 +297,14 @@ void ATankPawn::SetupReduceMovementVolumeTimer()
 
 	if (!IsValid(MovementSoundComponent)) return;
 	LastSoundVolume = MovementSoundComponent->VolumeMultiplier;
+}
+
+void ATankPawn::ScheduleCooldownResetOnNextTick()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	World->GetTimerManager().SetTimerForNextTick(this, &ATankPawn::ResetCooldownWidget);
 }
 
 void ATankPawn::ClearReduceSpeedTimer()
@@ -341,6 +354,7 @@ void ATankPawn::BeginPlay()
 	ResetMomentSoundVolume();
 	ActivateMovementSound();
 	HideCursor();
+	ScheduleCooldownResetOnNextTick();
 }
 
 void ATankPawn::SetActorTickEnabled(bool bEnabled)

@@ -13,6 +13,9 @@ class TOWEROFFENSE_API UHealthBarWidgetComponent : public UWidgetComponent
 	UPROPERTY(EditDefaultsOnly, Category = "Health")
 	TSubclassOf<UHealthWidget> HealthWidgetClass;
 
+#if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+
 	virtual void BeginPlay() override;
 };
