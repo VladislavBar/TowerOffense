@@ -1,11 +1,21 @@
 #include "AmmoComponent.h"
+#include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY(LogAmmoComponent);
 
 UAmmoComponent::UAmmoComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	SetIsReplicated(true);
 }
+
+void UAmmoComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UAmmoComponent, CurrentAmmo);
+}
+
 
 void UAmmoComponent::Fire()
 {
@@ -14,7 +24,7 @@ void UAmmoComponent::Fire()
 	OnAmmoChangedDelegate.Broadcast(CurrentAmmo);
 	if (CurrentAmmo <= 0)
 	{
-		ScheduleAmmoReplenishTimer();
+		ServerScheduleAmmoReplenishTimer();
 	}
 }
 
@@ -39,14 +49,27 @@ void UAmmoComponent::ScheduleOnAmmoInitializedNotification() const
 	World->GetTimerManager().SetTimerForNextTick(this, &UAmmoComponent::NotifyAmmoInitialized);
 }
 
-void UAmmoComponent::ScheduleAmmoReplenishTimer()
+bool UAmmoComponent::ServerScheduleAmmoReplenishTimer_Validate()
+{
+	const AActor* Owner = GetOwner();
+	if (!IsValid(Owner)) return false;
+
+	return Owner->HasAuthority();
+}
+
+void UAmmoComponent::ServerScheduleAmmoReplenishTimer_Implementation()
 {
 	if (ReplenishTime <= KINDA_SMALL_NUMBER)
 	{
 		UE_LOG(LogAmmoComponent, Warning, TEXT("ReplenishTime is too small!"));
 		return;
 	}
-	
+
+	MulticastScheduleAmmoReplenishTimer();
+}
+
+void UAmmoComponent::MulticastScheduleAmmoReplenishTimer_Implementation()
+{
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
@@ -64,9 +87,28 @@ void UAmmoComponent::NotifyAmmoInitialized() const
 
 void UAmmoComponent::ReplenishAmmo()
 {
+	const AActor* Owner = GetOwner();
+	if (!IsValid(Owner)) return;
+
+	if (!Owner->HasAuthority()) return;
+
 	CurrentAmmo = MaxAmmo;
+	MulticastReplenishAmmo();
+}
+
+void UAmmoComponent::MulticastReplenishAmmo_Implementation()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	World->GetTimerManager().ClearTimer(ReplenishTimerHandle);
 
 	OnAmmoReplenishFinishes.Broadcast(CurrentAmmo);
+	OnAmmoChangedDelegate.Broadcast(CurrentAmmo);
+}
+
+void UAmmoComponent::OnRep_CurrentAmmo() const
+{
 	OnAmmoChangedDelegate.Broadcast(CurrentAmmo);
 }
 

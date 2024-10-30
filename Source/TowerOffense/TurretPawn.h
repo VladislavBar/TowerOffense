@@ -99,7 +99,7 @@ private:
 	int32 ProjectileDebugSphereSegments = 12;
 	FColor ProjectileDebugSphereColor = FColor::Red;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_bCanFire)
 	bool bCanFire = true;
 
 	UPROPERTY(EditAnywhere, Category = "Turret|Fire", meta = (ClampMin = "0.0"))
@@ -138,6 +138,9 @@ private:
 	void ClientRotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
 	void PlaySoundOnRotation(const FRotator& PreviousRotation);
 
+	UFUNCTION()
+	void OnRep_bCanFire();
+
 public:
 	void TakeHit(float DamageAmount);
 
@@ -165,7 +168,9 @@ private:
 	void RotateWithoutInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds);
 	void RotateWithInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds);
 	void SetSpawnPointRotationAtLocation(const FVector& CurrentTargetLocation);
-	void StartCooldownTimer();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastStartCooldownTimer();
 
 	void DisableFire();
 	void EnableFire();

@@ -29,6 +29,7 @@ ATankPawn::ATankPawn()
 	MovementSoundComponent->bAutoActivate = false;
 
 	AmmoComponent = CreateDefaultSubobject<UAmmoComponent>(TEXT("AmmoComponent"));
+	AmmoComponent->SetIsReplicated(true);
 }
 
 void ATankPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

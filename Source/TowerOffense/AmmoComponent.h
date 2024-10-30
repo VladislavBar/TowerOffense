@@ -26,6 +26,8 @@ class TOWEROFFENSE_API UAmmoComponent : public UActorComponent
 
 	UPROPERTY(EditAnywhere, Category = "Ammo", meta = (ClampMin = "0"))
 	int32 MaxAmmo = 10;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentAmmo)
 	int32 CurrentAmmo = 10;
 
 	UPROPERTY(EditAnywhere, Category = "Ammo", meta = (ClampMin = "0"))
@@ -37,10 +39,24 @@ public:
 	UAmmoComponent();
 
 private:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void ScheduleOnAmmoInitializedNotification() const;
-	void ScheduleAmmoReplenishTimer();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerScheduleAmmoReplenishTimer();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastScheduleAmmoReplenishTimer();
+	
 	void NotifyAmmoInitialized() const;
 	void ReplenishAmmo();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastReplenishAmmo();
+
+	UFUNCTION()
+	void OnRep_CurrentAmmo() const;
+	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
