@@ -13,7 +13,7 @@ EBTNodeResult::Type UBTTask_EnemyTowerFire::ExecuteTask(UBehaviorTreeComponent& 
 	ATurretPawn* SelfTurret = Cast<ATurretPawn>(Controller->GetPawn());
 	if (!IsValid(SelfTurret)) return EBTNodeResult::Failed;
 
-	SelfTurret->Fire();
+	SelfTurret->ClientFire();
 	return EBTNodeResult::Succeeded;
 }
 

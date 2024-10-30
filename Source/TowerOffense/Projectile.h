@@ -39,5 +39,7 @@ private:
 	void DamageTarget(AActor* Target);
 	void SetProjectileSpeed(float Speed);
 	void SetDamage(float NewDamage);
-	void EmitOnHitProjectileEffect(const FVector& Location, const FVector& Normal);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastEmitOnHitProjectileEffect(const FVector& Location, const FVector& Normal);
 };

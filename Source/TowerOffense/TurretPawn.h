@@ -99,6 +99,7 @@ private:
 	int32 ProjectileDebugSphereSegments = 12;
 	FColor ProjectileDebugSphereColor = FColor::Red;
 
+	UPROPERTY(Replicated)
 	bool bCanFire = true;
 
 	UPROPERTY(EditAnywhere, Category = "Turret|Fire", meta = (ClampMin = "0.0"))
@@ -119,10 +120,25 @@ public:
 	FVector GetProjectileSpawnLocation() const;
 	float GetProjectileSpeed() const { return ProjectileSpeed; }
 
-	UFUNCTION(BlueprintCallable)
-	void Fire();
+	UFUNCTION(Client, Reliable, BlueprintCallable)
+	void ClientFire();
 
 	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
+
+private:
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerFire();
+
+	void RotateTurretMeshToLocation_Internal(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
+
+	UFUNCTION(Server, Unreliable)
+	void ServerRotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
+	void PlaySoundOnRotation(const FRotator& PreviousRotation);
+
+public:
 	void TakeHit(float DamageAmount);
 
 protected:
@@ -131,7 +147,15 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual bool CanFire() const;
-	virtual void OnSuccessfulFire(){};
+	virtual void OnSuccessfulFire() const;
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastPlayVFXOnFire() const;
+
+	UFUNCTION(Client, Reliable)
+	virtual void ClientPlayVFXOnFire() const;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
 	void SetupTeamColorDynamicMaterial(UStaticMeshComponent* Mesh);

@@ -10,7 +10,8 @@ public class TowerOffense : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
-			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "Niagara", "NiagaraCore", "GameplayCameras"
+			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "Niagara", "NiagaraCore", "GameplayCameras",
+			"Slate"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "AIModule" });

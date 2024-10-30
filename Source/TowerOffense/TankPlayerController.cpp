@@ -1,7 +1,10 @@
 #include "TankPlayerController.h"
 
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "TankPawn.h"
 #include "TowerOffenseGameMode.h"
+#include "GameFramework/HUD.h"
 #include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(LogTankPawnController)
@@ -12,24 +15,6 @@ void ATankPlayerController::BeginPlay()
 
 	SetupTankHUD();
 	SetupDelegates();
-}
-
-void ATankPlayerController::Tick(const float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	ResetCursor();
-}
-
-void ATankPlayerController::ResetCursor()
-{
-	int32 ViewportWidth = 0;
-	int32 ViewportHeight = 0;
-	GetViewportSize(ViewportWidth, ViewportHeight);
-
-	FVector2D MousePosition = FVector2D::ZeroVector;
-	GetMousePosition(MousePosition.X, MousePosition.Y);
-	SetMouseLocation(ViewportWidth / 2, ViewportHeight / 2);
 }
 
 void ATankPlayerController::SetupTankHUD()
@@ -73,6 +58,11 @@ ATowerOffenseGameMode* ATankPlayerController::GetTowerOffenseGameMode() const
 	if (!IsValid(World)) return nullptr;
 
 	return Cast<ATowerOffenseGameMode>(UGameplayStatics::GetGameMode(World));
+}
+
+void ATankPlayerController::OnCursorToggle(const FInputActionInstance& ActionValue)
+{
+	bShouldResetCursor = !bShouldResetCursor;
 }
 
 void ATankPlayerController::SetupDelegates()
