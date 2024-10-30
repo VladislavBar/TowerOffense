@@ -88,9 +88,7 @@ void UAmmoComponent::NotifyAmmoInitialized() const
 void UAmmoComponent::ReplenishAmmo()
 {
 	const AActor* Owner = GetOwner();
-	if (!IsValid(Owner)) return;
-
-	if (!Owner->HasAuthority()) return;
+	if (!IsValid(Owner) || !Owner->HasAuthority()) return;
 
 	CurrentAmmo = MaxAmmo;
 	MulticastReplenishAmmo();
