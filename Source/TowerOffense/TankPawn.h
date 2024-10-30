@@ -19,7 +19,6 @@ class TOWEROFFENSE_API ATankPawn : public ATurretPawn
 
 public:
 	FOnCooldownTickDelegate OnCooldownTickDelegate;
-	
 
 private:
 	UPROPERTY(EditDefaultsOnly)
@@ -69,6 +68,8 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "SFX", meta = (ClampMin = "0.0"))
 	float MovementSoundReductionExponent = 1.f;
+
+	UPROPERTY(Replicated)
 	float LastSoundVolume = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement", meta = (ClampMin = "0.0"))
@@ -79,8 +80,14 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement", meta = (ClampMin = "0.0"))
 	float Speed = 5.f;
+
+	UPROPERTY(Replicated)
 	float AccelerationDurationElapsed = 0.f;
+
+	UPROPERTY(Replicated)
 	bool bIsMovingForward = true;
+
+	UPROPERTY(Replicated)
 	float LastDirectionChangedTime = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tank Movement")
@@ -113,6 +120,10 @@ public:
 
 	bool IsMovingForward() const { return bIsMovingForward; }
 
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void ClientPlayVFXOnFire_Implementation() const override;
+
 private:
 	APlayerController* GetPlayerController() const;
 
@@ -124,8 +135,22 @@ private:
 	void ShowCursor();
 	void HideCursor();
 
+	UFUNCTION(Server, Unreliable, WithValidation)
+	void ServerMove(const float AxisValue, const float ElapsedTime);
 	void Move(const FInputActionInstance& ActionData);
+	float MoveReturningAccelerationValue_Internal(const float AxisValue, const float ElapsedTime);
+	
 	void OnMoveStopped();
+
+	UFUNCTION(Server, Reliable)
+	void ServerOnMoveStopped();
+
+	UFUNCTION(Server, Unreliable, WithValidation)
+	void ServerTurn(float AxisValue);
+	void Turn_Internal(float AxisValue);
+
+	bool IsValueWithinAxisValuesRange(const float AxisValue) const;
+
 	void Turn(const FInputActionInstance& ActionData);
 	void RotateCamera(const FInputActionInstance& ActionData);
 	void ToggleAutoTarget();
@@ -134,12 +159,18 @@ private:
 	void RotateTurretMeshByCursor(const float DeltaSeconds);
 	void RefreshCooldownWidget();
 	void ResetAccelerationDurationElapsed();
-	void UpdateSmokeEffectSpeed(float SmokeSpeed);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastUpdateSmokeEffectSpeed(float SmokeSpeed);
 	void ResetCooldownWidget() const;
 
 	void ActivateMovementSound();
+
 	void AdjustMovementComponentVolumeToSpeed(const float NewSpeed);
-	void SetMovementSoundVolume(const float Volume);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastSetMovementSoundVolume(const float Volume);
+
 	void ResetMomentSoundVolume();
 	void SetupReduceMovementVolumeTimer();
 	void ScheduleCooldownResetOnNextTick();
@@ -152,7 +183,7 @@ private:
 	virtual void BeginPlay() override;
 	virtual void SetActorTickEnabled(bool bEnabled) override;
 	virtual void Destroyed() override;
-	virtual void OnSuccessfulFire() override;
+	virtual void OnSuccessfulFire() const override;
 	virtual bool CanFire() const override;
 
 public:

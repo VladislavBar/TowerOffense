@@ -8,9 +8,13 @@
 #include "GameFramework/SpectatorPawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Net/UnrealNetwork.h"
 
 ATankPawn::ATankPawn()
 {
+	bReplicates = true;
+	SetReplicateMovement(true);
+
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
 
@@ -55,7 +59,7 @@ void ATankPawn::SetupActions(UInputComponent* PlayerInputComponent)
 
 	if (IsValid(FireAction))
 	{
-		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ATankPawn::Fire);
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ATankPawn::ClientFire);
 	}
 
 	if (IsValid(RotateCameraAction))
@@ -115,14 +119,37 @@ void ATankPawn::HideCursor()
 	PlayerController->bShowMouseCursor = false;
 }
 
+void ATankPawn::ServerMove_Implementation(const float AxisValue, const float ElapsedTime)
+{
+	if (!HasAuthority() && GetRemoteRole() != ROLE_AutonomousProxy) return;
+
+	const float AccelerationValue = MoveReturningAccelerationValue_Internal(AxisValue, ElapsedTime);
+	MulticastUpdateSmokeEffectSpeed(Speed * AccelerationValue);
+	AdjustMovementComponentVolumeToSpeed(AccelerationValue);
+}
+
+bool ATankPawn::ServerMove_Validate(const float AxisValue, const float ElapsedTime)
+{
+	return IsValueWithinAxisValuesRange(AxisValue) && ElapsedTime >= UE_SMALL_NUMBER;
+}
+
 void ATankPawn::Move(const FInputActionInstance& ActionData)
 {
-	const UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
-
 	const float AxisValue = ActionData.GetValue().Get<float>();
+	const float ElapsedTime = ActionData.GetElapsedTime();
+	ServerMove(AxisValue, ElapsedTime);
+	if (GetRemoteRole() == ROLE_Authority && GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		MoveReturningAccelerationValue_Internal(AxisValue, ElapsedTime);
+	}
+}
 
-	AccelerationDurationElapsed = ActionData.GetElapsedTime();
+float ATankPawn::MoveReturningAccelerationValue_Internal(const float AxisValue, const float ElapsedTime)
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return 0.f;
+
+	AccelerationDurationElapsed = ElapsedTime;
 
 	if (bIsMovingForward && AxisValue < 0.f || !bIsMovingForward && AxisValue >= 0.f)
 	{
@@ -133,33 +160,63 @@ void ATankPawn::Move(const FInputActionInstance& ActionData)
 	if (AccelerationDuration <= KINDA_SMALL_NUMBER)
 	{
 		AddActorLocalOffset(FVector(Speed * AxisValue, 0.f, 0.f));
-		return;
+		return 1.f;
 	}
 
-	const float AccelerationProgress = FMath::Clamp((ActionData.GetElapsedTime() - LastDirectionChangedTime) / AccelerationDuration, 0.f, 1.f);
+	const float AccelerationProgress = FMath::Clamp((ElapsedTime - LastDirectionChangedTime) / AccelerationDuration, 0.f, 1.f);
 	const float AccelerationValue = FMath::InterpEaseIn(0.f, 1.f, AccelerationProgress, AccelerationExponent);
+
 	AddActorLocalOffset(FVector(Speed * AccelerationValue * AxisValue * World->GetDeltaSeconds(), 0.f, 0.f), true);
-	UpdateSmokeEffectSpeed(Speed * AccelerationValue);
-	AdjustMovementComponentVolumeToSpeed(AccelerationValue);
+	return AccelerationValue;
 }
 
 void ATankPawn::OnMoveStopped()
 {
+	ServerOnMoveStopped();
+}
+
+void ATankPawn::ServerOnMoveStopped_Implementation()
+{
 	ResetAccelerationDurationElapsed();
-	UpdateSmokeEffectSpeed(0.f);
+	MulticastUpdateSmokeEffectSpeed(0.f);
 	SetupReduceMovementVolumeTimer();
 	bIsMovingForward = true;
 }
 
 void ATankPawn::Turn(const FInputActionInstance& ActionData)
 {
+	const float AxisValue = ActionData.GetValue().Get<float>();
+	ServerTurn(AxisValue);
+	if (GetRemoteRole() == ROLE_Authority && GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		Turn_Internal(AxisValue);
+	}
+}
+
+void ATankPawn::ServerTurn_Implementation(float AxisValue)
+{
+	Turn_Internal(AxisValue);
+}
+
+bool ATankPawn::ServerTurn_Validate(const float AxisValue)
+{
+	return IsValueWithinAxisValuesRange(AxisValue);
+}
+
+void ATankPawn::Turn_Internal(float AxisValue)
+{
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
-	
-	float AxisValue = ActionData.GetValue().Get<float>();
+
 	if (!bIsMovingForward) AxisValue *= -1.f;
 
 	AddActorLocalRotation(FRotator(0.f, AxisValue * RotationRate * World->GetDeltaSeconds(), 0.f));
+}
+
+bool ATankPawn::IsValueWithinAxisValuesRange(const float AxisValue) const
+{
+	// Is in range [-1, 1]
+	return FMath::Abs(AxisValue) >= KINDA_SMALL_NUMBER && FMath::Abs(AxisValue) - 1.f <= KINDA_SMALL_NUMBER;
 }
 
 void ATankPawn::RotateCamera(const FInputActionInstance& ActionData)
@@ -213,13 +270,16 @@ void ATankPawn::FindTarget(const APlayerController* PlayerController, FHitResult
 {
 	if (!IsValid(PlayerController)) return;
 
-	FVector2D MousePosition = FVector2D::ZeroVector;
-	PlayerController->GetMousePosition(MousePosition.X, MousePosition.Y);
+	int32 ViewportWidth = 0;
+	int32 ViewportHeight = 0;
+	PlayerController->GetViewportSize(ViewportWidth, ViewportHeight);
 
+	const FVector2D CenterOfTheScreen = FVector2D(ViewportWidth / 2, ViewportHeight / 2);
 	FCollisionQueryParams CollisionQueryParams;
 	CollisionQueryParams.AddIgnoredActor(this);
 
-	PlayerController->GetHitResultAtScreenPosition(MousePosition, ECC_Visibility, CollisionQueryParams, HitResultOut);
+	// TODO: replace with crosshair position instead of the center of the screen
+	PlayerController->GetHitResultAtScreenPosition(CenterOfTheScreen, ECC_Visibility, CollisionQueryParams, HitResultOut);
 }
 
 void ATankPawn::RotateTurretMeshByCursor(const float DeltaSeconds)
@@ -252,7 +312,7 @@ void ATankPawn::ResetAccelerationDurationElapsed()
 	LastDirectionChangedTime = 0.f;
 }
 
-void ATankPawn::UpdateSmokeEffectSpeed(float SmokeSpeed)
+void ATankPawn::MulticastUpdateSmokeEffectSpeed_Implementation(float SmokeSpeed)
 {
 	if (!IsValid(VehicleSmokeEffect)) return;
 
@@ -267,16 +327,20 @@ void ATankPawn::ResetCooldownWidget() const
 void ATankPawn::ActivateMovementSound()
 {
 	if (!IsValid(MovementSoundComponent)) return;
+	if (IsLocallyControlled())
+	{
+		MovementSoundComponent->AttenuationOverrides.bAttenuate = false;
+	}
 
 	MovementSoundComponent->Activate();
 }
 
 void ATankPawn::AdjustMovementComponentVolumeToSpeed(const float NewSpeed)
 {
-	SetMovementSoundVolume(NewSpeed * MovementSoundVolumeMultiplier);
+	MulticastSetMovementSoundVolume(NewSpeed * MovementSoundVolumeMultiplier);
 }
 
-void ATankPawn::SetMovementSoundVolume(const float Volume)
+void ATankPawn::MulticastSetMovementSoundVolume_Implementation(const float Volume)
 {
 	if (!IsValid(MovementSoundComponent)) return;
 
@@ -285,7 +349,7 @@ void ATankPawn::SetMovementSoundVolume(const float Volume)
 
 void ATankPawn::ResetMomentSoundVolume()
 {
-	SetMovementSoundVolume(DefaultMovementSoundVolume);
+	MulticastSetMovementSoundVolume(DefaultMovementSoundVolume);
 }
 
 void ATankPawn::SetupReduceMovementVolumeTimer()
@@ -324,7 +388,7 @@ void ATankPawn::ReduceVolumeOverTime()
 
 	const float ElapsedTime = World->GetTimerManager().GetTimerElapsed(ReduceSpeedTimerHandle);
 	const float NewVolume = UKismetMathLibrary::FInterpTo(LastSoundVolume, 0.f, ElapsedTime / MovementSoundReductionTime, 1.f);
-	SetMovementSoundVolume(NewVolume);
+	MulticastSetMovementSoundVolume(NewVolume);
 }
 
 void ATankPawn::PlayOnFireCameraShake() const
@@ -334,8 +398,10 @@ void ATankPawn::PlayOnFireCameraShake() const
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	UGameplayStatics::PlayWorldCameraShake(World, OnFireCameraShakeData.CameraShakeClass, GetActorLocation(), OnFireCameraShakeData.InnerRadius,
-		OnFireCameraShakeData.OuterRadius, OnFireCameraShakeData.Falloff);
+	APlayerController* PlayerController = GetPlayerController();
+	if (!IsValid(PlayerController)) return;
+
+	PlayerController->ClientStartCameraShake(OnFireCameraShakeData.CameraShakeClass);
 }
 
 void ATankPawn::Tick(float DeltaSeconds)
@@ -355,6 +421,8 @@ void ATankPawn::BeginPlay()
 	ActivateMovementSound();
 	HideCursor();
 	ScheduleCooldownResetOnNextTick();
+	// TODO: temporary set to true until GameMode is implemented correctly
+	SetActorTickEnabled(true);
 }
 
 void ATankPawn::SetActorTickEnabled(bool bEnabled)
@@ -372,6 +440,7 @@ void ATankPawn::SetActorTickEnabled(bool bEnabled)
 		RemoveInputContext(GameControlInputMappingContext);
 	}
 }
+
 void ATankPawn::Destroyed()
 {
 	if (!IsValid(CameraComponent)) return Super::Destroyed();
@@ -392,25 +461,40 @@ void ATankPawn::Destroyed()
 
 	PlayerController->Possess(NewActor);
 }
-void ATankPawn::OnSuccessfulFire()
+
+void ATankPawn::OnSuccessfulFire() const
 {
 	Super::OnSuccessfulFire();
 
-	PlayOnFireCameraShake();
 	if (IsValid(AmmoComponent))
 	{
 		AmmoComponent->Fire();
 	}
 }
+
 bool ATankPawn::CanFire() const
 {
 	return IsValid(AmmoComponent) && AmmoComponent->CanShoot() && Super::CanFire();
 }
 
+void ATankPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ATankPawn, AccelerationDurationElapsed);
+	DOREPLIFETIME(ATankPawn, bIsMovingForward);
+	DOREPLIFETIME(ATankPawn, LastDirectionChangedTime);
+	DOREPLIFETIME(ATankPawn, LastSoundVolume);
+}
+
+void ATankPawn::ClientPlayVFXOnFire_Implementation() const
+{
+	Super::ClientPlayVFXOnFire_Implementation();
+
+	PlayOnFireCameraShake();
+}
+
 APlayerController* ATankPawn::GetPlayerController() const
 {
-	UWorld* World = GetWorld();
-	if (!IsValid(World)) return nullptr;
-
-	return World->GetFirstPlayerController();
+	return Cast<APlayerController>(GetController());
 }

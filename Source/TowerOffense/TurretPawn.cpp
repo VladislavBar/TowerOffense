@@ -4,24 +4,32 @@
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Net/UnrealNetwork.h"
 #include "Particles/ParticleSystemComponent.h"
 
 ATurretPawn::ATurretPawn()
 {
+	bReplicates = true;
+	SetReplicateMovement(true);
+
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	NewRootComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("RootComponent"));
 	RootComponent = NewRootComponent;
+	RootComponent->SetIsReplicated(true);
 
 	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaseMesh"));
 	BaseMesh->SetupAttachment(RootComponent);
+	BaseMesh->SetIsReplicated(true);
 
 	TurretMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TurretMesh"));
 	TurretMesh->SetupAttachment(RootComponent);
+	TurretMesh->SetIsReplicated(true);
 
 	ProjectileSpawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("ProjectileSpawnPoint"));
 	ProjectileSpawnPoint->SetupAttachment(TurretMesh);
+	ProjectileSpawnPoint->SetIsReplicated(true);
 
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 
@@ -70,7 +78,15 @@ bool ATurretPawn::CanFire() const
 	return bCanFire && IsValid(ProjectileClass) && IsValid(ProjectileSpawnPoint);
 }
 
-void ATurretPawn::Fire()
+void ATurretPawn::OnSuccessfulFire() const
+{
+	ClientPlayVFXOnFire();
+	MulticastPlayVFXOnFire();
+}
+
+void ATurretPawn::ClientPlayVFXOnFire_Implementation() const {}
+
+void ATurretPawn::ServerFire_Implementation()
 {
 	if (!CanFire()) return;
 
@@ -88,11 +104,26 @@ void ATurretPawn::Fire()
 
 	DisableFire();
 	OnSuccessfulFire();
+}
 
+bool ATurretPawn::ServerFire_Validate()
+{
+	return CanFire();
+}
+
+void ATurretPawn::MulticastPlayVFXOnFire_Implementation() const
+{
 	if (IsValid(OnFireEffectComponent))
 	{
 		OnFireEffectComponent->ActivateSystem();
 	}
+}
+
+void ATurretPawn::ClientFire_Implementation()
+{
+	if (!CanFire()) return;
+
+	ServerFire();
 }
 
 void ATurretPawn::RotateWithoutInterp(const FVector& CurrentTargetLocation, const float DeltaSeconds)
@@ -224,11 +255,33 @@ void ATurretPawn::AdjustRotationSoundVolume(const float RotationDifference)
 	OnRotationSoundComponent->SetVolumeMultiplier(Volume);
 }
 
+void ATurretPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ATurretPawn, bCanFire);
+}
+
 void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
+{
+	if (IsLocallyControlled())
+	{
+		ServerRotateTurretMeshToLocation(DeltaSeconds, Location, bInstantRotation);
+		ClientRotateTurretMeshToLocation(DeltaSeconds, Location, bInstantRotation);
+		return;
+	}
+
+	if (HasAuthority() && GetRemoteRole() == ROLE_SimulatedProxy)
+	{
+		ServerRotateTurretMeshToLocation(DeltaSeconds, Location, bInstantRotation);
+		return;
+	}
+}
+
+void ATurretPawn::RotateTurretMeshToLocation_Internal(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
 {
 	if (!IsValid(TurretMesh)) return;
 
-	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
 	if (bInstantRotation)
 	{
 
@@ -238,10 +291,25 @@ void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVe
 	{
 		RotateWithInterp(Location, DeltaSeconds);
 	}
+}
 
+void ATurretPawn::ClientRotateTurretMeshToLocation_Implementation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
+{
+	const FRotator PreviousRotation = GetTurretMeshRotation();
+	RotateTurretMeshToLocation_Internal(DeltaSeconds, Location, bInstantRotation);
+	PlaySoundOnRotation(PreviousRotation);
+}
+
+void ATurretPawn::PlaySoundOnRotation(const FRotator& PreviousRotation)
+{
 	const FRotator NewRotation = TurretMesh->GetComponentRotation();
-	const float RotationDifference = UKismetMathLibrary::Abs(NewRotation.Yaw - CurrentRotation.Yaw);
+	const float RotationDifference = UKismetMathLibrary::Abs(NewRotation.Yaw - PreviousRotation.Yaw);
 	AdjustRotationSoundVolume(RotationDifference);
+}
+
+void ATurretPawn::ServerRotateTurretMeshToLocation_Implementation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
+{
+	RotateTurretMeshToLocation_Internal(DeltaSeconds, Location, bInstantRotation);
 }
 
 void ATurretPawn::TakeHit(float DamageAmount)

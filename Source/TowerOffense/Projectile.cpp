@@ -9,11 +9,14 @@
 AProjectile::AProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	SetReplicateMovement(true);
+	SetReplicates(true);
 
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	RootComponent = ProjectileMesh;
 
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
+	ProjectileMovementComponent->SetIsReplicated(true);
 }
 
 void AProjectile::SetProjectileSpeed(const float Speed)
@@ -26,7 +29,7 @@ void AProjectile::SetDamage(float NewDamage)
 	Damage = NewDamage;
 }
 
-void AProjectile::EmitOnHitProjectileEffect(const FVector& Location, const FVector& Normal)
+void AProjectile::MulticastEmitOnHitProjectileEffect_Implementation(const FVector& Location, const FVector& Normal)
 {
 	if (!IsValid(OnHitParticleEffect)) return;
 
@@ -48,9 +51,13 @@ void AProjectile::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimiti
 	FVector NormalImpulse, const FHitResult& Hit)
 {
 	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
-	DamageTarget(Other);
-	EmitOnHitProjectileEffect(HitLocation, HitNormal);
-	Destroy();
+
+	if (HasAuthority())
+	{
+		DamageTarget(Other);
+		MulticastEmitOnHitProjectileEffect(HitLocation, HitNormal);
+		Destroy();
+	}
 }
 
 void AProjectile::SetupIgnoreActors()

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "EndScreenHUD.h"
+#include "InputMappingContext.h"
 #include "TankPawnHUD.h"
 #include "TowerOffenseGameMode.h"
 #include "GameFramework/PlayerController.h"
@@ -49,9 +50,10 @@ private:
 	FDelegateHandle OnAmmoReplenishStartsDelegateHandle;
 	FDelegateHandle OnAmmoReplenishFinishesDelegateHandle;
 
+	bool bShouldResetCursor = true;
+	bool bHasWindowFocus = true;
+
 	virtual void BeginPlay() override;
-	virtual void Tick(const float DeltaSeconds) override;
-	void ResetCursor();
 
 	template <typename WidgetT>
 	void SetupHUD(const TSubclassOf<WidgetT>& WidgetClass, TObjectPtr<WidgetT>& Widget, FName&& WidgetClassName);
@@ -60,6 +62,8 @@ private:
 	void SetupLoseScreen();
 
 	ATowerOffenseGameMode* GetTowerOffenseGameMode() const;
+
+	void OnCursorToggle(const FInputActionInstance& ActionValue);
 
 	void SetupDelegates();
 	void SetupOnLoseDelegate();
@@ -89,6 +93,8 @@ template <typename WidgetT>
 void ATankPlayerController::SetupHUD(const TSubclassOf<WidgetT>& WidgetClass, TObjectPtr<WidgetT>& Widget, FName&& WidgetClassName)
 {
 	static_assert(TIsDerivedFrom<WidgetT, UUserWidget>::IsDerived, "WidgetT must be derived from UUserWidget");
+
+	if (!IsLocalPlayerController()) return;
 
 	if (IsValid(Widget) && Widget->IsInViewport()) return;
 	if (IsValid(Widget) && !Widget->IsInViewport()) return Widget->AddToViewport();
