@@ -168,7 +168,7 @@ void ATurretPawn::SetSpawnPointRotationAtLocation(const FVector& CurrentTargetLo
 	ProjectileSpawnPoint->SetWorldRotation(NewBulletSpawnTargetRotation);
 }
 
-void ATurretPawn::StartCooldownTimer()
+void ATurretPawn::MulticastStartCooldownTimer_Implementation()
 {
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
@@ -179,12 +179,17 @@ void ATurretPawn::StartCooldownTimer()
 void ATurretPawn::DisableFire()
 {
 	bCanFire = false;
-	StartCooldownTimer();
+	MulticastStartCooldownTimer();
 }
 
 void ATurretPawn::EnableFire()
 {
 	bCanFire = true;
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	World->GetTimerManager().ClearTimer(FireCooldownTimerHandle);
 }
 
 void ATurretPawn::SetupOnDeathDelegate()
@@ -305,6 +310,17 @@ void ATurretPawn::PlaySoundOnRotation(const FRotator& PreviousRotation)
 	const FRotator NewRotation = TurretMesh->GetComponentRotation();
 	const float RotationDifference = UKismetMathLibrary::Abs(NewRotation.Yaw - PreviousRotation.Yaw);
 	AdjustRotationSoundVolume(RotationDifference);
+}
+
+void ATurretPawn::OnRep_bCanFire()
+{
+	if (bCanFire)
+	{
+		const UWorld* World = GetWorld();
+		if (!IsValid(World)) return;
+
+		World->GetTimerManager().ClearTimer(FireCooldownTimerHandle);
+	}
 }
 
 void ATurretPawn::ServerRotateTurretMeshToLocation_Implementation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)

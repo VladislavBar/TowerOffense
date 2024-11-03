@@ -29,6 +29,7 @@ ATankPawn::ATankPawn()
 	MovementSoundComponent->bAutoActivate = false;
 
 	AmmoComponent = CreateDefaultSubobject<UAmmoComponent>(TEXT("AmmoComponent"));
+	AmmoComponent->SetIsReplicated(true);
 }
 
 void ATankPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -296,12 +297,12 @@ void ATankPawn::RotateTurretMeshByCursor(const float DeltaSeconds)
 
 void ATankPawn::RefreshCooldownWidget()
 {
-	const UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
-
-	ATankPlayerController* PlayerController = Cast<ATankPlayerController>(World->GetFirstPlayerController());
+	const ATankPlayerController* PlayerController = Cast<ATankPlayerController>(GetPlayerController());
 	if (!IsValid(PlayerController)) return;
 
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+	
 	const float RemainingCooldownTime = World->GetTimerManager().GetTimerRemaining(FireCooldownTimerHandle);
 	OnCooldownTickDelegate.Broadcast(RemainingCooldownTime);
 }
