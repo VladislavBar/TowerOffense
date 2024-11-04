@@ -31,32 +31,13 @@ void UBTTask_RotateEnemyTurretToTarget::TickTask(UBehaviorTreeComponent& OwnerCo
 
 	PreviousSelfRotation = SelfTurret->GetTurretMeshRotation();
 	const ATankPawn* Target = Cast<ATankPawn>(Blackboard->GetValueAsObject("Target"));
-	const FVector PredictedTargetLocation = PredictTargetLocation(SelfTurret, Target);
+	const FVector PredictedTargetLocation = SelfTurret->PredictTargetLocation(Target, StartPredictingLocationAtAccelerationProgress);
 	SelfTurret->RotateTurretMeshToLocation(DeltaSeconds, PredictedTargetLocation, true);
 
 	if (PreviousSelfRotation.Equals(SelfTurret->GetTurretMeshRotation(), RotationTolerance))
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
-}
-
-FVector UBTTask_RotateEnemyTurretToTarget::PredictTargetLocation(const ATurretPawn* Self, const ATankPawn* Target) const
-{
-	if (!IsValid(Target) || !IsValid(Self) || Self->GetProjectileSpeed() <= KINDA_SMALL_NUMBER) return FVector::ZeroVector;
-
-	const FVector TargetLocation = Target->GetActorLocation();
-	const FVector TargetForwardVector = Target->GetActorForwardVector();
-	const float TimeToReachTarget = FVector::Distance(TargetLocation, Self->GetActorLocation()) / Self->GetProjectileSpeed();
-
-	const float AccelerationElapsedTime = Target->GetElapsedTimeSinceLastDirectionChange();
-	const float AccelerationDuration = Target->GetAccelerationDuration();
-	if (AccelerationElapsedTime <= KINDA_SMALL_NUMBER || AccelerationElapsedTime <= AccelerationDuration * StartPredictingLocationAtAccelerationProgress)
-	{
-		return TargetLocation;
-	}
-
-	const float Direction = Target->IsMovingForward() ? 1.f : -1.f;
-	return TargetLocation + TargetForwardVector * Target->GetSpeed() * TimeToReachTarget * Direction;
 }
 
 FString UBTTask_RotateEnemyTurretToTarget::GetStaticDescription() const

@@ -21,14 +21,10 @@ private:
 public:
 	ATowerPawn();
 
-	FVector GetRelativeProjectileSpawnLocation() const;
-	FRotator GetRelativeTurretMeshRotation() const;
-
-	void RotateByYaw(const float Yaw);
-
 private:
 	void RefreshHealthBarVisibility();
 	bool IsVisibleToPlayer() const;
+	
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 };

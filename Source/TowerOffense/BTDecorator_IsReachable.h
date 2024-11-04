@@ -23,7 +23,6 @@ public:
 
 private:
 	virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const override;
-	bool HasStraightView(const ATowerPawn* OwnerComp, const ATankPawn* Target) const;
 	ATowerPawn* GetTowerPawn(const UBehaviorTreeComponent& OwnerComp) const;
 	virtual FString GetStaticDescription() const override;
 };

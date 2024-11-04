@@ -8,6 +8,10 @@
 
 #include "TurretPawn.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnActorTickableEnabledDelegate, bool);
+
+class ATankPawn;
+
 USTRUCT()
 struct FCameraShakeData
 {
@@ -79,6 +83,8 @@ protected:
 	FTimerHandle FireCooldownTimerHandle;
 
 private:
+	FOnActorTickableEnabledDelegate OnActorTickableEnabledDelegate;
+
 	UPROPERTY(EditAnywhere, meta = (GetOptions = "GetMaterialTeamColorSlotNames"))
 	FName MaterialTeamColorSlotName;
 
@@ -117,6 +123,7 @@ protected:
 
 public:
 	FRotator GetTurretMeshRotation() const;
+	float GetTurretMeshRotationYaw() const { return GetTurretMeshRotation().Yaw; }
 	FVector GetProjectileSpawnLocation() const;
 	float GetProjectileSpeed() const { return ProjectileSpeed; }
 
@@ -124,6 +131,8 @@ public:
 	void ClientFire();
 
 	void RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
+	FDelegateHandle AddOnActorTickableEnabledHandler(const FOnActorTickableEnabledDelegate::FDelegate& Delegate);
+	void RemoveOnActorTickableEnabledHandler(const FDelegateHandle& Handle);
 
 private:
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -143,8 +152,22 @@ private:
 
 public:
 	void TakeHit(float DamageAmount);
+	FVector GetRelativeProjectileSpawnLocation() const;
+	FRotator GetRelativeTurretMeshRotation() const;
+
+	bool HasStraightView(const AActor* Target) const;
+	bool CanReach(const AActor* Target, const float MaxDistance) const;
+
 
 protected:
+	friend class UBT_IdleRotation;
+	friend struct FSTTask_EnemyTowerIdleRotation;
+	friend class UBTTask_RotateEnemyTurretToTarget;
+	friend struct FSTTask_RotateToTarget;
+
+	void RotateTurretByYaw(const float Yaw) const;
+	FVector PredictTargetLocation(const ATankPawn* Target, float StartPredictingLocationAtAccelerationProgress) const;
+	
 	void SetTargetLocation(const FVector& Location);
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
@@ -157,6 +180,7 @@ protected:
 
 	UFUNCTION(Client, Reliable)
 	virtual void ClientPlayVFXOnFire() const;
+	virtual void SetActorTickEnabled(bool bEnabled) override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
