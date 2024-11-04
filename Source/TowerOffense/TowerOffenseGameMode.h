@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "TankPawn.h"
 #include "TurretPawn.h"
 #include "GameFramework/GameModeBase.h"
 #include "TowerOffenseGameMode.generated.h"
@@ -13,6 +14,9 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnEnemiesCountChangedDelegate, int32);
 DECLARE_MULTICAST_DELEGATE(FOnDelayStartDelegate);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDelayRemainingTimeDelegate, float);
 DECLARE_MULTICAST_DELEGATE(FOnDelayFinishDelegate);
+
+// TODO: implement it with the teams logic in future
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnPlayersAmountChangedDelegate, const TArray<ATankPawn*>&);
 
 UCLASS()
 class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
@@ -47,6 +51,7 @@ class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 	FOnDelayStartDelegate DelayStartDelegate;
 	FOnDelayRemainingTimeDelegate DelayRemainingTimeDelegate;
 	FOnDelayFinishDelegate DelayFinishDelegate;
+	FOnPlayersAmountChangedDelegate PlayersAmountChanged;
 
 	FDelegateHandle OnEnemySpawnedDelegateHandle;
 	FDelegateHandle OnEnemyDestroyedDelegateHandle;
@@ -54,20 +59,25 @@ class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 	FTimerHandle DelayTimerHandle;
 	FTimerHandle MatchEndedTimerHandle;
 
+	UPROPERTY()
+	TArray<ATankPawn*> Players;
+
 public:
 	ATowerOffenseGameMode();
 
 private:
 	virtual void BeginPlay() override;
-	void SetupPostBeginPlayEnemiesCountUpdate();
+	void SetupPostBeginPlayParticipants();
 
 	void SetEnemiesCount(int32 NewEnemiesCount);
 
 	void SetupEnemyCount();
+	void SetupPlayersCount();
 	void SetupDelegates();
 	void SetupOnEnemySpawnedDelegate();
 	void SetupOnEnemyDestroyedDelegate();
-	void SetupOnPlayerDestroyedDelegate();
+	void SetupOnPlayersDestroyedDelegate() const;
+	void SetupOnPlayerDestroyedDelegate(ATankPawn* TankPawn) const;
 	void SetupStartDelay();
 	void SetupFinishDelay();
 	void SetupEndMatchDelay(FTimerDelegate::TMethodPtr<ATowerOffenseGameMode> InTimerMethod);
@@ -76,6 +86,8 @@ private:
 	UFUNCTION()
 	void SetupOnPlayerLosesEndMatchTimer(AActor* Actor);
 
+	void OnPawnSpawned(AActor* Actor);
+	void OnPlayerSpawned(AActor* Actor);
 	void OnEnemySpawned(AActor* Actor);
 	void OnEnemyDestroyed(AActor* Actor);
 	void OnStartDelay();
@@ -94,10 +106,14 @@ private:
 	void BroadcastRemainingTime() const;
 
 public:
+	TArray<ATankPawn*> GetPlayers() const;
+	
 	FDelegateHandle AddPlayerWinsHandler(const FPlayerWinsDelegate::FDelegate& Delegate);
 	FDelegateHandle AddPlayerLosesHandler(const FPlayerWinsDelegate::FDelegate& Delegate);
 	FDelegateHandle AddEnemiesCountChangedHandler(const FOnEnemiesCountChangedDelegate::FDelegate& Delegate);
 	FDelegateHandle AddDelayStartHandler(const FOnDelayStartDelegate::FDelegate& Delegate);
 	FDelegateHandle AddDelayFinishHandler(const FOnDelayFinishDelegate::FDelegate& Delegate);
 	FDelegateHandle AddDelayRemainingTimeHandler(const FOnDelayRemainingTimeDelegate::FDelegate& Delegate);
+	FDelegateHandle AddPlayersAmountChangedHandler(const FOnPlayersAmountChangedDelegate::FDelegate& Delegate);
+	void RemovePlayersAmountChangedHandler(const FDelegateHandle& Handle);
 };

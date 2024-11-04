@@ -26,7 +26,7 @@ void UBT_IdleRotation::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMe
 	ATowerPawn* SelfTurret = Cast<ATowerPawn>(Controller->GetPawn());
 	if (!IsValid(SelfTurret)) return FinishLatentAbort(OwnerComp);
 
-	SelfTurret->RotateByYaw((bClockwiseRotation ? 1.f : -1.f) * RotationSpeed * DeltaSeconds);
+	SelfTurret->RotateTurretByYaw((bClockwiseRotation ? 1.f : -1.f) * RotationSpeed * DeltaSeconds);
 	FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 }
 

@@ -17,18 +17,19 @@ void ATowerOffenseGameMode::BeginPlay()
 
 	CheckSetup();
 	SetupDelegates();
-	SetupPostBeginPlayEnemiesCountUpdate();
+	SetupPostBeginPlayParticipants();
 	SetupStartDelay();
 	SetupFinishDelay();
 	SetupAmbientSound();
 }
 
-void ATowerOffenseGameMode::SetupPostBeginPlayEnemiesCountUpdate()
+void ATowerOffenseGameMode::SetupPostBeginPlayParticipants()
 {
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
 	World->GetTimerManager().SetTimerForNextTick(this, &ATowerOffenseGameMode::SetupEnemyCount);
+	World->GetTimerManager().SetTimerForNextTick(this, &ATowerOffenseGameMode::SetupPlayersCount);
 }
 
 void ATowerOffenseGameMode::SetEnemiesCount(int32 NewEnemiesCount)
@@ -48,11 +49,31 @@ void ATowerOffenseGameMode::SetupEnemyCount()
 	SetEnemiesCount(FoundActors.Num());
 }
 
+void ATowerOffenseGameMode::SetupPlayersCount()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(World, ATankPawn::StaticClass(), FoundActors);
+
+	Players.Reset();
+	for (AActor* Actor : FoundActors)
+	{
+		ATankPawn* TankPawn = Cast<ATankPawn>(Actor);
+		if (!IsValid(TankPawn)) continue;
+
+		Players.Add(TankPawn);
+	}
+
+	PlayersAmountChanged.Broadcast(Players);
+}
+
 void ATowerOffenseGameMode::SetupDelegates()
 {
 	SetupOnEnemySpawnedDelegate();
 	SetupOnEnemyDestroyedDelegate();
-	SetupOnPlayerDestroyedDelegate();
+	SetupOnPlayersDestroyedDelegate();
 }
 
 void ATowerOffenseGameMode::SetupOnEnemySpawnedDelegate()
@@ -60,7 +81,7 @@ void ATowerOffenseGameMode::SetupOnEnemySpawnedDelegate()
 	UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	OnEnemySpawnedDelegate.BindUObject(this, &ATowerOffenseGameMode::OnEnemySpawned);
+	OnEnemySpawnedDelegate.BindUObject(this, &ATowerOffenseGameMode::OnPawnSpawned);
 	OnEnemySpawnedDelegateHandle = World->AddOnActorSpawnedHandler(OnEnemySpawnedDelegate);
 }
 
@@ -80,18 +101,29 @@ void ATowerOffenseGameMode::SetupOnEnemyDestroyedDelegate()
 	OnEnemyDestroyedDelegateHandle = World->AddOnActorDestroyedHandler(OnEnemyDestroyedDelegate);
 }
 
-void ATowerOffenseGameMode::SetupOnPlayerDestroyedDelegate()
+void ATowerOffenseGameMode::SetupOnPlayersDestroyedDelegate() const
 {
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	const APlayerController* PlayerController = World->GetFirstPlayerController();
-	if (!IsValid(PlayerController)) return;
+	TArray<AActor*> FoundPlayerControllers;
+	UGameplayStatics::GetAllActorsOfClass(World, APlayerController::StaticClass(), FoundPlayerControllers);
 
-	AActor* PlayerPawn = PlayerController->GetPawn();
-	if (!IsValid(PlayerPawn)) return;
+	for (AActor* Actor : FoundPlayerControllers)
+	{
+		const APlayerController* PlayerController = Cast<APlayerController>(Actor);
+		if (!IsValid(PlayerController)) continue;
 
-	PlayerPawn->OnDestroyed.AddDynamic(this, &ATowerOffenseGameMode::SetupOnPlayerLosesEndMatchTimer);
+		ATankPawn* TankPawn = Cast<ATankPawn>(PlayerController->GetPawn());
+		if (!IsValid(TankPawn)) continue;
+
+		SetupOnPlayerDestroyedDelegate(TankPawn);
+	}
+}
+
+void ATowerOffenseGameMode::SetupOnPlayerDestroyedDelegate(ATankPawn* TankPawn) const
+{
+	TankPawn->OnDestroyed.AddDynamic(this, &ATowerOffenseGameMode::SetupOnPlayerLosesEndMatchTimer);
 }
 
 void ATowerOffenseGameMode::SetupStartDelay()
@@ -130,6 +162,23 @@ void ATowerOffenseGameMode::SetupAmbientSound()
 void ATowerOffenseGameMode::SetupOnPlayerLosesEndMatchTimer(AActor* Actor)
 {
 	SetupEndMatchDelay(&ATowerOffenseGameMode::OnPlayerLoses);
+}
+
+void ATowerOffenseGameMode::OnPawnSpawned(AActor* Actor)
+{
+	OnEnemySpawned(Actor);
+	OnPlayerSpawned(Actor);
+}
+
+void ATowerOffenseGameMode::OnPlayerSpawned(AActor* Actor)
+{
+	ATankPawn* TankPawn = Cast<ATankPawn>(Actor);
+	if (!IsValid(TankPawn)) return;
+
+	SetupOnPlayerDestroyedDelegate(TankPawn);
+	Players.Add(TankPawn);
+
+	PlayersAmountChanged.Broadcast(Players);
 }
 
 void ATowerOffenseGameMode::OnEnemyDestroyed(AActor* Actor)
@@ -229,6 +278,11 @@ void ATowerOffenseGameMode::BroadcastRemainingTime() const
 	DelayRemainingTimeDelegate.Broadcast(TimerRemaining);
 }
 
+TArray<ATankPawn*> ATowerOffenseGameMode::GetPlayers() const
+{
+	return Players;
+}
+
 FDelegateHandle ATowerOffenseGameMode::AddPlayerWinsHandler(const FPlayerWinsDelegate::FDelegate& Delegate)
 {
 	return PlayerWinsDelegate.Add(Delegate);
@@ -257,4 +311,14 @@ FDelegateHandle ATowerOffenseGameMode::AddDelayFinishHandler(const FOnDelayStart
 FDelegateHandle ATowerOffenseGameMode::AddDelayRemainingTimeHandler(const FOnDelayRemainingTimeDelegate::FDelegate& Delegate)
 {
 	return DelayRemainingTimeDelegate.Add(Delegate);
+}
+
+FDelegateHandle ATowerOffenseGameMode::AddPlayersAmountChangedHandler(const FOnPlayersAmountChangedDelegate::FDelegate& Delegate)
+{
+	return PlayersAmountChanged.Add(Delegate);
+}
+
+void ATowerOffenseGameMode::RemovePlayersAmountChangedHandler(const FDelegateHandle& Handle)
+{
+	PlayersAmountChanged.Remove(Handle);
 }

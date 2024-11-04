@@ -1,6 +1,7 @@
 #include "TurretPawn.h"
 
 #include "NiagaraComponent.h"
+#include "TankPawn.h"
 #include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -260,6 +261,13 @@ void ATurretPawn::AdjustRotationSoundVolume(const float RotationDifference)
 	OnRotationSoundComponent->SetVolumeMultiplier(Volume);
 }
 
+void ATurretPawn::SetActorTickEnabled(bool bEnabled)
+{
+	Super::SetActorTickEnabled(bEnabled);
+
+	OnActorTickableEnabledDelegate.Broadcast(bEnabled);
+}
+
 void ATurretPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -281,6 +289,16 @@ void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVe
 		ServerRotateTurretMeshToLocation(DeltaSeconds, Location, bInstantRotation);
 		return;
 	}
+}
+
+FDelegateHandle ATurretPawn::AddOnActorTickableEnabledHandler(const FOnActorTickableEnabledDelegate::FDelegate& Delegate)
+{
+	return OnActorTickableEnabledDelegate.Add(Delegate);
+}
+
+void ATurretPawn::RemoveOnActorTickableEnabledHandler(const FDelegateHandle& Handle)
+{
+	OnActorTickableEnabledDelegate.Remove(Handle);
 }
 
 void ATurretPawn::RotateTurretMeshToLocation_Internal(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
@@ -385,4 +403,75 @@ void ATurretPawn::BeginPlay()
 	SetupOnDeathDelegate();
 	AdjustRotationSoundVolume(0.f);
 	EnableRotationSound();
+}
+
+bool ATurretPawn::CanReach(const AActor* Target, const float MaxDistance) const
+{
+	if (FVector::DistXY(GetActorLocation(), Target->GetActorLocation()) > MaxDistance) return false;
+	if (HasStraightView(Target)) return true;
+
+	return false;
+}
+
+bool ATurretPawn::HasStraightView(const AActor* Target) const
+{
+	if (!IsValid(Target)) return false;
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return false;
+
+	FRotator ExpectedRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target->GetActorLocation());
+	const FRotator CurrentRotation = GetRelativeTurretMeshRotation();
+	const FVector ExpectedProjectileSpawnLocation =
+		GetActorLocation() + (ExpectedRotation - CurrentRotation).RotateVector(GetRelativeProjectileSpawnLocation());
+
+	FHitResult HitResult;
+	UKismetSystemLibrary::LineTraceSingle(World, ExpectedProjectileSpawnLocation, Target->GetActorLocation(), UEngineTypes::ConvertToTraceType(ECC_Visibility),
+		false, TArray<AActor*>(), EDrawDebugTrace::None, HitResult, true, FLinearColor::Green, FLinearColor::Red, 1.f);
+	return HitResult.GetActor() == Target;
+}
+
+void ATurretPawn::RotateTurretByYaw(const float Yaw) const
+{
+	if (!IsValid(TurretMesh)) return;
+
+	const FRotator CurrentRotation = TurretMesh->GetComponentRotation();
+	FRotator NewRotation = CurrentRotation;
+	NewRotation.Yaw += Yaw;
+
+	TurretMesh->SetWorldRotation(NewRotation);
+}
+
+FVector ATurretPawn::PredictTargetLocation(const ATankPawn* Target, float StartPredictingLocationAtAccelerationProgress) const
+{
+	if (!IsValid(Target) || GetProjectileSpeed() <= KINDA_SMALL_NUMBER) return FVector::ZeroVector;
+
+	const FVector CurrentTargetLocation = Target->GetActorLocation();
+	const FVector TargetForwardVector = Target->GetActorForwardVector();
+	const float TimeToReachTarget = FVector::Distance(CurrentTargetLocation, GetActorLocation()) / GetProjectileSpeed();
+
+	const float AccelerationElapsedTime = Target->GetElapsedTimeSinceLastDirectionChange();
+	const float AccelerationDuration = Target->GetAccelerationDuration();
+	if (AccelerationElapsedTime <= KINDA_SMALL_NUMBER || AccelerationElapsedTime <= AccelerationDuration * StartPredictingLocationAtAccelerationProgress)
+	{
+		return CurrentTargetLocation;
+	}
+
+	const float Direction = Target->IsMovingForward() ? 1.f : -1.f;
+	return CurrentTargetLocation + TargetForwardVector * Target->GetSpeed() * TimeToReachTarget * Direction;
+}
+
+FVector ATurretPawn::GetRelativeProjectileSpawnLocation() const
+{
+	if (!IsValid(ProjectileSpawnPoint) || !IsValid(TurretMesh)) return FVector::ZeroVector;
+
+	const FRotator TurretMeshRotation = TurretMesh->GetRelativeRotation();
+	return TurretMeshRotation.RotateVector(ProjectileSpawnPoint->GetRelativeLocation());
+}
+
+FRotator ATurretPawn::GetRelativeTurretMeshRotation() const
+{
+	if (!IsValid(TurretMesh)) return FRotator::ZeroRotator;
+
+	return TurretMesh->GetRelativeRotation();
 }

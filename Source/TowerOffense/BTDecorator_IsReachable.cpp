@@ -25,26 +25,7 @@ bool UBTDecorator_IsReachable::CalculateRawConditionValue(UBehaviorTreeComponent
 	const ATowerPawn* TowerPawn = GetTowerPawn(OwnerComp);
 	if (!IsValid(TowerPawn)) return false;
 
-	if (FVector::DistXY(TowerPawn->GetActorLocation(), Target->GetActorLocation()) > MaxDistance) return false;
-	if (HasStraightView(TowerPawn, Target)) return true;
-
-	return false;
-}
-
-bool UBTDecorator_IsReachable::HasStraightView(const ATowerPawn* TowerPawn, const ATankPawn* Target) const
-{
-	if(!IsValid(TowerPawn) || !IsValid(Target)) return false;
-	
-	const UWorld* World = GetWorld();
-	if (!IsValid(World)) return false;
-
-	FRotator ExpectedRotation = UKismetMathLibrary::FindLookAtRotation(TowerPawn->GetActorLocation(), Target->GetActorLocation());
-	const FRotator CurrentRotation = TowerPawn->GetRelativeTurretMeshRotation();
-	const FVector ExpectedProjectileSpawnLocation = TowerPawn->GetActorLocation() + (ExpectedRotation - CurrentRotation).RotateVector(TowerPawn->GetRelativeProjectileSpawnLocation());
-
-	FHitResult HitResult;
-	UKismetSystemLibrary::LineTraceSingle(World, ExpectedProjectileSpawnLocation, Target->GetActorLocation(), UEngineTypes::ConvertToTraceType(ECC_Visibility), false, TArray<AActor*>(), EDrawDebugTrace::None, HitResult, true, FLinearColor::Green, FLinearColor::Red, 1.f);
-	return HitResult.GetActor() == Target;
+	return TowerPawn->CanReach(Target, MaxDistance);
 }
 
 ATowerPawn* UBTDecorator_IsReachable::GetTowerPawn(const UBehaviorTreeComponent& OwnerComp) const
