@@ -124,6 +124,7 @@ void ATurretPawn::ClientFire_Implementation()
 {
 	if (!CanFire()) return;
 
+	if (!IsLocallyControlled() && !HasAuthority()) return;
 	ServerFire();
 }
 

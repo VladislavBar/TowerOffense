@@ -36,11 +36,27 @@ class TOWEROFFENSE_API UHealthComponent : public UActorComponent
 
 	UPROPERTY(EditAnywhere, Category = "Health", meta = (ClampMin = "0.0"))
 	float MaxHealth = 100.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_HealthPoints)
 	float HealthPoints = 100.f;
+
+public:
+	UHealthComponent();
 
 private:
 	virtual void BeginPlay() override;
 	void SetupHealth();
+
+	UFUNCTION()
+	void OnRep_HealthPoints(float OldHealthPoints) const;
+
+	UFUNCTION(Server, Reliable)
+	void ServerTakeHit(float Damage);
+	void OnDamageTakenBroadcastDelegates(float Damage) const;
+	void SetHealthPoints(float NewHealthPoints);
+
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 	float GetHealthPoints() const { return HealthPoints; }
