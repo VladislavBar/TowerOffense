@@ -6,7 +6,7 @@ DEFINE_LOG_CATEGORY(LogAmmoComponent);
 UAmmoComponent::UAmmoComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	SetIsReplicated(true);
+	SetIsReplicatedByDefault(true);
 }
 
 void UAmmoComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
