@@ -1,4 +1,6 @@
 #include "EnemyTowerAIController.h"
+
+#include "TowerOffenseGameState.h"
 #include "GameFramework/Pawn.h"
 #include "Components/StateTreeComponent.h"
 
@@ -63,11 +65,11 @@ void AEnemyTowerAIController::SubscribeToPlayersAmountChangedEvent()
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	ATowerOffenseGameMode* TowerOffenseGameMode = Cast<ATowerOffenseGameMode>(UGameplayStatics::GetGameMode(World));
-	if (!IsValid(TowerOffenseGameMode)) return;
+	ATowerOffenseGameState* TowerOffenseGameState = Cast<ATowerOffenseGameState>(World->GetGameState());
+	if (!IsValid(TowerOffenseGameState)) return;
 
-	OnPlayersAmountChangedDelegate.BindUObject(this, &AEnemyTowerAIController::OnPlayersAmountChanged);
-	OnPlayersAmountChangedDelegateHandle = TowerOffenseGameMode->AddPlayersAmountChangedHandler(OnPlayersAmountChangedDelegate);
+	OnParticipantAmountChangedDelegate.BindUObject(this, &AEnemyTowerAIController::OnParticipantsAmountChanged);
+	OnPlayersAmountChangedDelegateHandle = TowerOffenseGameState->AddPlayersAmountChangedHandler(OnParticipantAmountChangedDelegate);
 }
 
 void AEnemyTowerAIController::UnsubscribeFromPLayersAmountChangedEvent() const
@@ -75,10 +77,10 @@ void AEnemyTowerAIController::UnsubscribeFromPLayersAmountChangedEvent() const
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	ATowerOffenseGameMode* TowerOffenseGameMode = Cast<ATowerOffenseGameMode>(UGameplayStatics::GetGameMode(World));
-	if (!IsValid(TowerOffenseGameMode)) return;
+	ATowerOffenseGameState* TowerOffenseGameState = Cast<ATowerOffenseGameState>(World->GetGameState());
+	if (!IsValid(TowerOffenseGameState)) return;
 
-	TowerOffenseGameMode->RemovePlayersAmountChangedHandler(OnPlayersAmountChangedDelegateHandle);
+	TowerOffenseGameState->RemovePlayersAmountChangedHandler(OnPlayersAmountChangedDelegateHandle);
 }
 
 void AEnemyTowerAIController::SetupOnPossessedPawnTickableDelegate()
@@ -104,7 +106,7 @@ void AEnemyTowerAIController::OnPossessedPawnTickableEnabled(const bool bEnabled
 	SyncStateTreeToTickableState();
 }
 
-void AEnemyTowerAIController::OnPlayersAmountChanged(const TArray<ATankPawn*>& Players) const
+void AEnemyTowerAIController::OnParticipantsAmountChanged(const TArray<ATurretPawn*>& Participants) const
 {
 	if (!IsValid(StateTreeComponent) || !ResetEnemiesEvent.Tag.IsValid()) return;
 

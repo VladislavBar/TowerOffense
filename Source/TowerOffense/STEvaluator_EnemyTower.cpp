@@ -1,7 +1,6 @@
 #include "STEvaluator_EnemyTower.h"
 
 #include "StateTreeExecutionContext.h"
-#include "TowerOffenseGameMode.h"
 #include "Kismet/GameplayStatics.h"
 
 void FSTEvaluator_EnemyTower::TreeStart(FStateTreeExecutionContext& Context) const

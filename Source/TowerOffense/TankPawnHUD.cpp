@@ -6,7 +6,7 @@ void UTankPawnHUD::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	SetupWidgets();
+	OnMatchWaitingToStart();
 	SetupDelegates();
 
 	ResetAmmoWidgetHideTimer();
@@ -59,22 +59,7 @@ void UTankPawnHUD::ClearAmmoWidgetHideTimer()
 	World->GetTimerManager().ClearTimer(AmmoWidgetHideTimerHandle);
 }
 
-void UTankPawnHUD::SetupWidgets()
-{
-	const APawn* PlayerPawn = GetOwningPlayerPawn();
-	if (!IsValid(PlayerPawn)) return;
-
-	if (PlayerPawn->IsActorTickEnabled())
-	{
-		SetupOnGameStarted();
-	}
-	else
-	{
-		SetupOnGamePreparing();
-	}
-}
-
-void UTankPawnHUD::SetupOnGamePreparing()
+void UTankPawnHUD::OnMatchWaitingToStart() const
 {
 	if (IsValid(EnemiesLeftWidget))
 	{
@@ -87,7 +72,7 @@ void UTankPawnHUD::SetupOnGamePreparing()
 	}
 }
 
-void UTankPawnHUD::SetupOnGameStarted()
+void UTankPawnHUD::OnMatchStarted() const
 {
 	if (IsValid(EnemiesLeftWidget))
 	{
@@ -133,6 +118,11 @@ void UTankPawnHUD::SetupHealthDelegates()
 
 	OnHitTakenDelegate.BindUObject(this, &UTankPawnHUD::OnHitTaken);
 	OnHitTakenDelegateHandle = HealthComponent->AddOnHitTakenHandler(OnHitTakenDelegate);
+}
+
+void UTankPawnHUD::SetupOnStartDelayDelegate()
+{
+	OnStartDelayDelegate.BindUObject(this, &UTankPawnHUD::HideCooldownWidget);
 }
 
 void UTankPawnHUD::OnAmmoChanged(const int32 Ammo)

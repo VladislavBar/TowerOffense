@@ -2,7 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
-#include "TowerOffenseGameMode.h"
+#include "TowerOffenseGameState.h"
+
 #include "TurretPawn.h"
 #include "Components/StateTreeComponent.h"
 #include "Perception/AISenseConfig.h"
@@ -29,7 +30,7 @@ private:
 	FOnActorTickableEnabledDelegate::FDelegate OnActorTickableEnabledDelegate;
 	FDelegateHandle OnPossessedPawnTickableEnabledDelegateHandle;
 
-	FOnPlayersAmountChangedDelegate::FDelegate OnPlayersAmountChangedDelegate;
+	FOnParticipantsAmountChangedDelegate::FDelegate OnParticipantAmountChangedDelegate;
 	FDelegateHandle OnPlayersAmountChangedDelegateHandle;
 
 	bool bCanRunStateTree = false;
@@ -53,5 +54,5 @@ private:
 	void ClearOnPossessedPawnTickableDelegate();
 
 	void OnPossessedPawnTickableEnabled(const bool bEnabled) const;
-	void OnPlayersAmountChanged(const TArray<ATankPawn*>& Players) const;
+	void OnParticipantsAmountChanged(const TArray<ATurretPawn*>& Players) const;
 };

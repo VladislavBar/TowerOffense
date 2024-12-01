@@ -50,22 +50,25 @@ class TOWEROFFENSE_API UTankPawnHUD : public UUserWidget
 	FOnAmmoReplenishStartsDelegate::FDelegate OnReplenishStartsDelegate;
 	FOnAmmoReplenishFinishesDelegate::FDelegate OnReplenishFinishesDelegate;
 	FOnHitTakenDelegate::FDelegate OnHitTakenDelegate;
+	FOnDelayStartDelegate::FDelegate OnStartDelayDelegate;
+	FOnMatchStartedDelegate::FDelegate OnFinishDelayDelegate;
 
 	FDelegateHandle OnAmmoChangedDelegateHandle;
 	FDelegateHandle OnReplenishStartsDelegateHandle;
 	FDelegateHandle OnReplenishFinishesDelegateHandle;
 	FDelegateHandle OnHitTakenDelegateHandle;
+	FDelegateHandle OnStartDelayDelegateHandle;
+	FDelegateHandle OnFinishDelayDelegateHandle;
 
 	FTimerHandle HealthBarHideTimerHandle;
 	FTimerHandle AmmoWidgetHideTimerHandle;
 
 	virtual void NativeConstruct() override;
 
-	void SetupOnGamePreparing();
-	void SetupOnGameStarted();
 	void SetupDelegates();
 	void SetupAmmoDelegates();
 	void SetupHealthDelegates();
+	void SetupOnStartDelayDelegate();
 
 	void OnAmmoChanged(const int32 Ammo);
 	void OnReplenishStarts();
@@ -86,7 +89,8 @@ class TOWEROFFENSE_API UTankPawnHUD : public UUserWidget
 	void ClearAmmoWidgetHideTimer();
 
 public:
-	void SetupWidgets();
+	void OnMatchWaitingToStart() const;
+	void OnMatchStarted() const;
 	void HideCooldownWidget() const { HideComponent(&UTankPawnHUD::CooldownWidget); };
 	void ShowCooldownWidget() const { ShowComponent(&UTankPawnHUD::CooldownWidget); };
 };

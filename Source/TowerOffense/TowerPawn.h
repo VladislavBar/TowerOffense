@@ -15,16 +15,9 @@ private:
 	UPROPERTY(EditAnywhere)
 	bool bRotateClockwise = true;
 
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UHealthBarWidgetComponent> HealthBarWidgetComponent;
-
 public:
 	ATowerPawn();
 
 private:
-	void RefreshHealthBarVisibility();
-	bool IsVisibleToPlayer() const;
-	
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 };

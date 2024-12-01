@@ -1,30 +1,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "TankPawn.h"
+#include "TowerOffenseGameState.h"
 #include "TurretPawn.h"
-#include "GameFramework/GameModeBase.h"
+#include "GameFramework/GameStateBase.h"
 #include "TowerOffenseGameMode.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTowerOffenseGameMode, Log, All);
-
-DECLARE_MULTICAST_DELEGATE(FPlayerWinsDelegate);
-DECLARE_MULTICAST_DELEGATE(FPlayerLosesDelegate);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnEnemiesCountChangedDelegate, int32);
-DECLARE_MULTICAST_DELEGATE(FOnDelayStartDelegate);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnDelayRemainingTimeDelegate, float);
-DECLARE_MULTICAST_DELEGATE(FOnDelayFinishDelegate);
-
-// TODO: implement it with the teams logic in future
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnPlayersAmountChangedDelegate, const TArray<ATankPawn*>&);
 
 UCLASS()
 class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-
-	int32 EnemyCount = 0;
-	bool bHasStarted = false;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Start", meta = (ClampMin = "0.0"))
 	float DelayTime = 10.f;
@@ -32,26 +19,12 @@ class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 	UPROPERTY(EditDefaultsOnly, Category = "End", meta = (ClampMin = "0.0"))
 	float MatchEndDelayTime = 5.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Start")
-	TSubclassOf<AActor> DelayStartActorClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
-	TSubclassOf<ATurretPawn> EnemyClass;
-
 	UPROPERTY(EditDefaultsOnly, Category = "SFX")
 	TObjectPtr<USoundBase> AmbientSound;
 
-	FOnActorSpawned::FDelegate OnEnemySpawnedDelegate;
-	FOnActorDestroyed::FDelegate OnEnemyDestroyedDelegate;
+	FOnActorSpawned::FDelegate OnActorSpawnedDelegate;
+	FOnActorDestroyed::FDelegate OnActorDestroyedDelegate;
 	FOnActorDestroyed::FDelegate OnPlayerDestroyedDelegate;
-
-	FPlayerWinsDelegate PlayerWinsDelegate;
-	FPlayerLosesDelegate PlayerLosesDelegate;
-	FOnEnemiesCountChangedDelegate EnemiesCountChanged;
-	FOnDelayStartDelegate DelayStartDelegate;
-	FOnDelayRemainingTimeDelegate DelayRemainingTimeDelegate;
-	FOnDelayFinishDelegate DelayFinishDelegate;
-	FOnPlayersAmountChangedDelegate PlayersAmountChanged;
 
 	FDelegateHandle OnEnemySpawnedDelegateHandle;
 	FDelegateHandle OnEnemyDestroyedDelegateHandle;
@@ -59,61 +32,52 @@ class TOWEROFFENSE_API ATowerOffenseGameMode : public AGameModeBase
 	FTimerHandle DelayTimerHandle;
 	FTimerHandle MatchEndedTimerHandle;
 
-	UPROPERTY()
-	TArray<ATankPawn*> Players;
+	FTimerDelegate OnFinishDelayDelegate;
+	FTimerHandle OnFinishDelayHandle;
+
+	TArray<FOnTeamChangedDelegateWithHandle> OnTeamChangedDelegatesWithHandles;
 
 public:
 	ATowerOffenseGameMode();
 
 private:
 	virtual void BeginPlay() override;
-	void SetupPostBeginPlayParticipants();
+	void PrepareGame() const;
 
-	void SetEnemiesCount(int32 NewEnemiesCount);
+	void SetMatchState(ETowerOffenseMatchState MatchState) const;
+	void SetupParticipants();
+	void ScheduleStartMatch();
 
-	void SetupEnemyCount();
-	void SetupPlayersCount();
 	void SetupDelegates();
-	void SetupOnEnemySpawnedDelegate();
-	void SetupOnEnemyDestroyedDelegate();
-	void SetupOnPlayersDestroyedDelegate() const;
-	void SetupOnPlayerDestroyedDelegate(ATankPawn* TankPawn) const;
-	void SetupStartDelay();
-	void SetupFinishDelay();
-	void SetupEndMatchDelay(FTimerDelegate::TMethodPtr<ATowerOffenseGameMode> InTimerMethod);
-	void SetupAmbientSound();
+	void SetupOnParticipantSpawnedDelegate();
+	void SetupOnParticipantDestroyedDelegate();
+	void SetupAmbientSound() const;
+	void MulticastGameStateDelayStarted(const float DelayBeforeStart) const;
+	bool HasAnyTeamWon() const;
 
 	UFUNCTION()
-	void SetupOnPlayerLosesEndMatchTimer(AActor* Actor);
+	void SyncRemainingTimeBeforeMatchStarts() const;
 
 	void OnPawnSpawned(AActor* Actor);
-	void OnPlayerSpawned(AActor* Actor);
-	void OnEnemySpawned(AActor* Actor);
-	void OnEnemyDestroyed(AActor* Actor);
+	void OnParticipantSpawned(AActor* Actor);
+
+	UFUNCTION()
+	void OnParticipantDestroyed(AActor* Actor);
 	void OnStartDelay();
-	void OnFinishDelay();
-	void OnPlayerWins();
-	void OnPlayerLoses();
 
-	void CheckSetup() const;
-	void CheckAndSetupWinCondition();
-
-	void ToggleSelectedActorsTick(bool bShouldTick) const;
-	void DisableSelectedActorsTick();
-	void EnableSelectedActorsTick();
+	void ToggleParticipantsTick(bool bShouldTick) const;
+	void DisableParticipantsTick() const;
+	void EnableParticipantsTick() const;
 
 	virtual void Tick(float DeltaSeconds) override;
-	void BroadcastRemainingTime() const;
+	void ActivateParticipants() const;
+
+	void StartMatch() const;
+	void TryFinishingMatch();
+	void ScheduleEndMatchDelay(const ETeam WinningTeam);
+	void FinishMatch(const ETeam WinningTeam) const;
 
 public:
-	TArray<ATankPawn*> GetPlayers() const;
-	
-	FDelegateHandle AddPlayerWinsHandler(const FPlayerWinsDelegate::FDelegate& Delegate);
-	FDelegateHandle AddPlayerLosesHandler(const FPlayerWinsDelegate::FDelegate& Delegate);
-	FDelegateHandle AddEnemiesCountChangedHandler(const FOnEnemiesCountChangedDelegate::FDelegate& Delegate);
-	FDelegateHandle AddDelayStartHandler(const FOnDelayStartDelegate::FDelegate& Delegate);
-	FDelegateHandle AddDelayFinishHandler(const FOnDelayFinishDelegate::FDelegate& Delegate);
-	FDelegateHandle AddDelayRemainingTimeHandler(const FOnDelayRemainingTimeDelegate::FDelegate& Delegate);
-	FDelegateHandle AddPlayersAmountChangedHandler(const FOnPlayersAmountChangedDelegate::FDelegate& Delegate);
-	void RemovePlayersAmountChangedHandler(const FDelegateHandle& Handle);
+	void SyncUserState(ATurretPawn* TurretPawn) const;
+	void ScheduleStartDelayOnNextTick();
 };
