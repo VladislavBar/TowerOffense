@@ -6,7 +6,7 @@
 #include "EndScreenHUD.h"
 #include "InputMappingContext.h"
 #include "TankPawnHUD.h"
-#include "TowerOffenseGameMode.h"
+#include "TowerOffenseGameState.h"
 #include "GameFramework/PlayerController.h"
 #include "TankPlayerController.generated.h"
 
@@ -36,23 +36,28 @@ private:
 	UPROPERTY()
 	TObjectPtr<UEndScreenHUD> LoseScreen;
 
-	FPlayerWinsDelegate::FDelegate OnPlayerWinDelegate;
-	FPlayerLosesDelegate::FDelegate OnPlayerLosesDelegate;
-	FOnDelayStartDelegate::FDelegate OnTowerOffenseGameModeLoadedDelegate;
-	FOnDelayFinishDelegate::FDelegate OnTowerOffenseGameModeStartedDelegate;
-	FOnAmmoReplenishStartsDelegate::FDelegate OnReplenishStartsDelegate;
-	FOnAmmoReplenishFinishesDelegate::FDelegate OnReplenishFinishesDelegate;
+	FOnDelayStartDelegate::FDelegate OnTowerOffenseGameStateLoadedDelegate;
+	FDelegateHandle OnTowerOffenseGameStateLoadedDelegateHandle;
 
-	FDelegateHandle OnPlayerWinsDelegateHandle;
-	FDelegateHandle OnPlayersLosesDelegateHandle;
-	FDelegateHandle OnTowerOffenseGameModeLoadedDelegateHandle;
-	FDelegateHandle OnTowerOffenseGameModeStartedDelegateHandle;
+	FOnMatchStartedDelegate::FDelegate OnTowerOffenseGameStateStartedDelegate;
+	FDelegateHandle OnTowerOffenseGameStateStartedDelegateHandle;
+
+	FOnMatchFinished::FDelegate OnTowerOffenseGameStateFinishedDelegate;
+	FDelegateHandle OnTowerOffenseGameStateFinishedDelegateHandle;
+
+	FOnAmmoReplenishStartsDelegate::FDelegate OnReplenishStartsDelegate;
 	FDelegateHandle OnAmmoReplenishStartsDelegateHandle;
+
+	FOnAmmoReplenishFinishesDelegate::FDelegate OnReplenishFinishesDelegate;
 	FDelegateHandle OnAmmoReplenishFinishesDelegateHandle;
+
+	FOnParticipantsAmountChangedDelegate::FDelegate OnParticipantsAmountChangedDelegate;
+	FDelegateHandle OnParticipantsAmountChangedDelegateHandle;
 
 	bool bShouldResetCursor = true;
 	bool bHasWindowFocus = true;
 
+private:
 	virtual void BeginPlay() override;
 
 	template <typename WidgetT>
@@ -61,18 +66,20 @@ private:
 	void SetupWinScreen();
 	void SetupLoseScreen();
 
-	ATowerOffenseGameMode* GetTowerOffenseGameMode() const;
+	ATowerOffenseGameState* GetTowerOffenseGameState() const;
 
 	void OnCursorToggle(const FInputActionInstance& ActionValue);
+	void OnMatchWaitingToStart();
+	void OnMatchStarted();
 
 	void SetupDelegates();
-	void SetupOnLoseDelegate();
-	void SetupOnWinDelegate();
-	void SetupOnTowerOffenseGameModeLoadedDelegate();
-	void SetupOnTowerOffenseGameModeStartedDelegate();
+	void SetupOnTowerOffenseGameStateLoadedDelegate();
+	void SetupOnTowerOffenseGameStateStartedDelegate();
+	void SetupOnTowerOffenseGameStateFinishedDelegate();
 	void SetupOnAmmoReplenishStartsDelegate();
 	void SetupOnAmmoReplenishFinishesDelegate();
 
+	void OnMatchFinished(ETeam WinningTeam);
 	void OnPlayerWins();
 	void OnPlayerLoses();
 
@@ -84,9 +91,6 @@ private:
 	void HideCooldownWidget() const;
 	void OnReplenishFinishes(const int32 NewAmmo) const;
 	void ShowCooldownWidget() const;
-
-	void PauseGame() const;
-	void ResumeGame() const;
 };
 
 template <typename WidgetT>

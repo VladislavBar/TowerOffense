@@ -14,6 +14,7 @@ ATankPawn::ATankPawn()
 {
 	bReplicates = true;
 	SetReplicateMovement(true);
+	PrimaryActorTick.bCanEverTick = true;
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
@@ -37,7 +38,7 @@ void ATankPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	SetupActions(PlayerInputComponent);
-	SetupInputContext(GameControlInputMappingContext);
+	SetupInputContext(StartDelayMappingContext);
 }
 
 void ATankPawn::SetupActions(UInputComponent* PlayerInputComponent)
@@ -302,7 +303,7 @@ void ATankPawn::RefreshCooldownWidget()
 
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
-	
+
 	const float RemainingCooldownTime = World->GetTimerManager().GetTimerRemaining(FireCooldownTimerHandle);
 	OnCooldownTickDelegate.Broadcast(RemainingCooldownTime);
 }
@@ -323,6 +324,20 @@ void ATankPawn::MulticastUpdateSmokeEffectSpeed_Implementation(float SmokeSpeed)
 void ATankPawn::ResetCooldownWidget() const
 {
 	OnCooldownTickDelegate.Broadcast(0.f);
+}
+
+void ATankPawn::OnSetActorTickEnabled(const bool bEnabled)
+{
+	if (bEnabled)
+	{
+		SetupInputContext(GameControlInputMappingContext);
+		RemoveInputContext(StartDelayMappingContext);
+	}
+	else
+	{
+		SetupInputContext(StartDelayMappingContext);
+		RemoveInputContext(GameControlInputMappingContext);
+	}
 }
 
 void ATankPawn::ActivateMovementSound()
@@ -409,8 +424,12 @@ void ATankPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	RotateTurretMeshByCursor(DeltaSeconds);
-	RefreshCooldownWidget();
+	if (IsLocallyControlled())
+	{
+		RotateTurretMeshByCursor(DeltaSeconds);
+		RefreshCooldownWidget();
+	}
+
 	ReduceVolumeOverTime();
 }
 
@@ -422,24 +441,12 @@ void ATankPawn::BeginPlay()
 	ActivateMovementSound();
 	HideCursor();
 	ScheduleCooldownResetOnNextTick();
-	// TODO: temporary set to true until GameMode is implemented correctly
-	SetActorTickEnabled(true);
 }
 
 void ATankPawn::SetActorTickEnabled(bool bEnabled)
 {
 	Super::SetActorTickEnabled(bEnabled);
-
-	if (bEnabled)
-	{
-		SetupInputContext(GameControlInputMappingContext);
-		RemoveInputContext(StartDelayMappingContext);
-	}
-	else
-	{
-		SetupInputContext(StartDelayMappingContext);
-		RemoveInputContext(GameControlInputMappingContext);
-	}
+	OnSetActorTickEnabled(bEnabled);
 }
 
 void ATankPawn::Destroyed()
@@ -452,7 +459,7 @@ void ATankPawn::Destroyed()
 
 	Super::Destroyed();
 
-	if (!IsValid(PlayerController)) return;
+	if (!IsValid(PlayerController) || !HasAuthority()) return;
 
 	UWorld* World = GetWorld();
 	if (!IsValid(World)) return;

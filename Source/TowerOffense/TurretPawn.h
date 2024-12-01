@@ -8,8 +8,9 @@
 
 #include "TurretPawn.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnActorTickableEnabledDelegate, bool);
+DECLARE_LOG_CATEGORY_EXTERN(LogTurretPawn, Log, All);
 
+class UHealthBarWidgetComponent;
 class ATankPawn;
 
 USTRUCT()
@@ -30,13 +31,38 @@ struct FCameraShakeData
 	float Falloff = 1.f;
 };
 
+UENUM()
+enum class ETeam : uint8
+{
+	None,
+	Team1,
+	Team2,
+	Team3,
+	Team4,
+	Towers,
+	MAX
+};
+
+class ATurretPawn;
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnActorTickableEnabledDelegate, bool);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnTeamChangedDelegate, const ATurretPawn*, ETeam);
+
 UCLASS()
 class TOWEROFFENSE_API ATurretPawn : public APawn
 {
 	GENERATED_BODY()
 
+	friend class ATowerOffenseGameMode;
+
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UCapsuleComponent> NewRootComponent;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentTeam, EditAnywhere, Category = "Turret|Team")
+	ETeam CurrentTeam = ETeam::Team1;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Turret|Team")
+	TObjectPtr<UDataTable> TeamColorTable;
 
 	// The maximum speed at which the turret can rotate when it should almost instantly rotate to the target location (incl. multipliers)
 	UPROPERTY(EditAnywhere)
@@ -66,12 +92,23 @@ class TOWEROFFENSE_API ATurretPawn : public APawn
 	UPROPERTY(EditAnywhere, Category = "Turret|SFX", meta = (ClampMin = "0.0"))
 	float RotationSoundVolumeMultiplier = 0.1f;
 
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UHealthBarWidgetComponent> HealthBarWidgetComponent;
+
+	FOnTeamChangedDelegate OnTeamChangedDelegate;
+
+	UPROPERTY(ReplicatedUsing = OnRep_bIsInitialized)
+	bool bIsInitialized = false;
+
 protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> BaseMesh;
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> TurretMesh;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* TeamColorDynamicMaterial;
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<USceneComponent> ProjectileSpawnPoint;
@@ -91,7 +128,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	FName MaterialTeamColorParameterName;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	FColor TeamColor;
 
 	UFUNCTION()
@@ -134,6 +171,10 @@ public:
 	FDelegateHandle AddOnActorTickableEnabledHandler(const FOnActorTickableEnabledDelegate::FDelegate& Delegate);
 	void RemoveOnActorTickableEnabledHandler(const FDelegateHandle& Handle);
 
+	FDelegateHandle AddOnTeamChangedHandler(const FOnTeamChangedDelegate::FDelegate& Delegate);
+	void RemoveOnTeamChangedHandler(const FDelegateHandle& Handle);
+	void UpdateMaterialTeamColor();
+
 private:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerFire();
@@ -150,6 +191,12 @@ private:
 	UFUNCTION()
 	void OnRep_bCanFire();
 
+	UFUNCTION()
+	void OnRep_CurrentTeam();
+
+	UFUNCTION(Server, Reliable)
+	void ServerFinishInitialization();
+
 public:
 	void TakeHit(float DamageAmount);
 	FVector GetRelativeProjectileSpawnLocation() const;
@@ -157,7 +204,6 @@ public:
 
 	bool HasStraightView(const AActor* Target) const;
 	bool CanReach(const AActor* Target, const float MaxDistance) const;
-
 
 protected:
 	friend class UBT_IdleRotation;
@@ -167,7 +213,7 @@ protected:
 
 	void RotateTurretByYaw(const float Yaw) const;
 	FVector PredictTargetLocation(const ATankPawn* Target, float StartPredictingLocationAtAccelerationProgress) const;
-	
+
 	void SetTargetLocation(const FVector& Location);
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
@@ -182,7 +228,26 @@ protected:
 	virtual void ClientPlayVFXOnFire() const;
 	virtual void SetActorTickEnabled(bool bEnabled) override;
 
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetActorTickEnabled(const bool bEnabled);
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION(Exec)
+	void CommandLineSetTeam(const ETeam NewTeam);
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetTeam(const ETeam NewTeam);
+	void SetTeam(const ETeam NewTeam);
+
+	UFUNCTION(Server, Reliable)
+	void SyncPlayerStateTeam() const;
+
+	UFUNCTION()
+	void OnRep_bIsInitialized();
+
+	UFUNCTION(Server, Reliable)
+	void ServerSyncUserState();
 
 private:
 	void SetupTeamColorDynamicMaterial(UStaticMeshComponent* Mesh);
@@ -202,7 +267,8 @@ private:
 	void SetupOnDeathDelegate();
 	void OnDeath();
 
-	void EmitOnDeathEffect() const;
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastEmitOnDeathEffect() const;
 	void EmitOnDeathSFX() const;
 	void EmitOnDeathVFX() const;
 	void EmitOnDeathCameraShake() const;
@@ -210,6 +276,12 @@ private:
 	void EnableRotationSound();
 	void AdjustRotationSoundVolume(const float RotationDifference);
 
+	void RefreshHealthBarVisibility() const;
+	bool IsVisibleToPlayer() const;
+	FColor GetTeamColor() const;
+
 public:
 	ATurretPawn();
+
+	ETeam GetTeam() const { return CurrentTeam; }
 };

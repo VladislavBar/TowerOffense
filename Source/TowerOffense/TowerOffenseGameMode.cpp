@@ -1,6 +1,8 @@
 #include "TowerOffenseGameMode.h"
 
 #include "TankPawn.h"
+#include "TeamHelper.h"
+#include "TowerOffenseGameState.h"
 #include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(LogTowerOffenseGameMode)
@@ -15,143 +17,93 @@ void ATowerOffenseGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	CheckSetup();
+	PrepareGame();
 	SetupDelegates();
-	SetupPostBeginPlayParticipants();
-	SetupStartDelay();
-	SetupFinishDelay();
+	ScheduleStartDelayOnNextTick();
 	SetupAmbientSound();
 }
 
-void ATowerOffenseGameMode::SetupPostBeginPlayParticipants()
+void ATowerOffenseGameMode::PrepareGame() const
 {
+	SetMatchState(ETowerOffenseMatchState::WaitingToStart);
+	MulticastGameStateDelayStarted(DelayTime);
+}
+
+void ATowerOffenseGameMode::SetMatchState(ETowerOffenseMatchState MatchState) const
+{
+	ATowerOffenseGameState* CurrentGameState = GetGameState<ATowerOffenseGameState>();
+	if (!IsValid(CurrentGameState)) return;
+
+	CurrentGameState->MatchState = MatchState;
+	CurrentGameState->OnRep_MatchState();
+}
+
+void ATowerOffenseGameMode::SetupParticipants()
+{
+	ATowerOffenseGameState* CurrentGameState = GetGameState<ATowerOffenseGameState>();
+	if (!IsValid(CurrentGameState)) return;
+
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	World->GetTimerManager().SetTimerForNextTick(this, &ATowerOffenseGameMode::SetupEnemyCount);
-	World->GetTimerManager().SetTimerForNextTick(this, &ATowerOffenseGameMode::SetupPlayersCount);
-}
+	TArray<AActor*> Participants;
+	UGameplayStatics::GetAllActorsOfClass(World, ATurretPawn::StaticClass(), Participants);
 
-void ATowerOffenseGameMode::SetEnemiesCount(int32 NewEnemiesCount)
-{
-	EnemyCount = NewEnemiesCount;
-	EnemiesCountChanged.Broadcast(EnemyCount);
-}
-
-void ATowerOffenseGameMode::SetupEnemyCount()
-{
-	UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
-
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(World, EnemyClass, FoundActors);
-
-	SetEnemiesCount(FoundActors.Num());
-}
-
-void ATowerOffenseGameMode::SetupPlayersCount()
-{
-	const UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
-
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(World, ATankPawn::StaticClass(), FoundActors);
-
-	Players.Reset();
-	for (AActor* Actor : FoundActors)
+	TArray<ATurretPawn*> TurretParticipants;
+	for (AActor* Actor : Participants)
 	{
-		ATankPawn* TankPawn = Cast<ATankPawn>(Actor);
-		if (!IsValid(TankPawn)) continue;
+		ATurretPawn* TurretPawn = Cast<ATurretPawn>(Actor);
+		if (!IsValid(TurretPawn)) continue;
 
-		Players.Add(TankPawn);
+		TurretParticipants.Add(TurretPawn);
 	}
 
-	PlayersAmountChanged.Broadcast(Players);
+	CurrentGameState->ActiveParticipants = TurretParticipants;
+	CurrentGameState->OnRep_ActiveParticipants();
+}
+
+void ATowerOffenseGameMode::ScheduleStartMatch()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	World->GetTimerManager().SetTimer(DelayTimerHandle, this, &ATowerOffenseGameMode::StartMatch, DelayTime);
+	MulticastGameStateDelayStarted(DelayTime);
 }
 
 void ATowerOffenseGameMode::SetupDelegates()
 {
-	SetupOnEnemySpawnedDelegate();
-	SetupOnEnemyDestroyedDelegate();
-	SetupOnPlayersDestroyedDelegate();
+	SetupOnParticipantSpawnedDelegate();
+	SetupOnParticipantDestroyedDelegate();
 }
 
-void ATowerOffenseGameMode::SetupOnEnemySpawnedDelegate()
-{
-	UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
-
-	OnEnemySpawnedDelegate.BindUObject(this, &ATowerOffenseGameMode::OnPawnSpawned);
-	OnEnemySpawnedDelegateHandle = World->AddOnActorSpawnedHandler(OnEnemySpawnedDelegate);
-}
-
-void ATowerOffenseGameMode::OnEnemySpawned(AActor* Actor)
-{
-	if (!IsValid(Actor) || !IsValid(EnemyClass) || !Actor->IsA(EnemyClass)) return;
-
-	SetEnemiesCount(EnemyCount + 1);
-}
-
-void ATowerOffenseGameMode::SetupOnEnemyDestroyedDelegate()
-{
-	UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
-
-	OnEnemyDestroyedDelegate.BindUObject(this, &ATowerOffenseGameMode::OnEnemyDestroyed);
-	OnEnemyDestroyedDelegateHandle = World->AddOnActorDestroyedHandler(OnEnemyDestroyedDelegate);
-}
-
-void ATowerOffenseGameMode::SetupOnPlayersDestroyedDelegate() const
+void ATowerOffenseGameMode::SetupOnParticipantSpawnedDelegate()
 {
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	TArray<AActor*> FoundPlayerControllers;
-	UGameplayStatics::GetAllActorsOfClass(World, APlayerController::StaticClass(), FoundPlayerControllers);
-
-	for (AActor* Actor : FoundPlayerControllers)
-	{
-		const APlayerController* PlayerController = Cast<APlayerController>(Actor);
-		if (!IsValid(PlayerController)) continue;
-
-		ATankPawn* TankPawn = Cast<ATankPawn>(PlayerController->GetPawn());
-		if (!IsValid(TankPawn)) continue;
-
-		SetupOnPlayerDestroyedDelegate(TankPawn);
-	}
+	OnActorSpawnedDelegate.BindUObject(this, &ATowerOffenseGameMode::OnPawnSpawned);
+	OnEnemySpawnedDelegateHandle = World->AddOnActorSpawnedHandler(OnActorSpawnedDelegate);
 }
 
-void ATowerOffenseGameMode::SetupOnPlayerDestroyedDelegate(ATankPawn* TankPawn) const
-{
-	TankPawn->OnDestroyed.AddDynamic(this, &ATowerOffenseGameMode::SetupOnPlayerLosesEndMatchTimer);
-}
-
-void ATowerOffenseGameMode::SetupStartDelay()
+void ATowerOffenseGameMode::SetupOnParticipantDestroyedDelegate()
 {
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	DisableSelectedActorsTick();
+	OnActorDestroyedDelegate.BindUObject(this, &ATowerOffenseGameMode::OnParticipantDestroyed);
+	OnEnemyDestroyedDelegateHandle = World->AddOnActorDestroyedHandler(OnActorDestroyedDelegate);
+}
+
+void ATowerOffenseGameMode::ScheduleStartDelayOnNextTick()
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
 	World->GetTimerManager().SetTimerForNextTick(this, &ATowerOffenseGameMode::OnStartDelay);
 }
 
-void ATowerOffenseGameMode::SetupFinishDelay()
-{
-	const UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
-
-	World->GetTimerManager().SetTimer(DelayTimerHandle, this, &ATowerOffenseGameMode::OnFinishDelay, DelayTime, false);
-}
-
-void ATowerOffenseGameMode::SetupEndMatchDelay(FTimerDelegate::TMethodPtr<ATowerOffenseGameMode> InTimerMethod)
-{
-	UWorld* World = GetWorld();
-	if (!IsValid(World)) return;
-
-	World->GetTimerManager().SetTimer(MatchEndedTimerHandle, this, InTimerMethod, MatchEndDelayTime, false);
-}
-
-void ATowerOffenseGameMode::SetupAmbientSound()
+void ATowerOffenseGameMode::SetupAmbientSound() const
 {
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
@@ -159,166 +111,159 @@ void ATowerOffenseGameMode::SetupAmbientSound()
 	UGameplayStatics::SpawnSoundAtLocation(World, AmbientSound, FVector::ZeroVector);
 }
 
-void ATowerOffenseGameMode::SetupOnPlayerLosesEndMatchTimer(AActor* Actor)
+void ATowerOffenseGameMode::MulticastGameStateDelayStarted(const float DelayBeforeStart) const
 {
-	SetupEndMatchDelay(&ATowerOffenseGameMode::OnPlayerLoses);
+	ATowerOffenseGameState* CurrentGameState = GetGameState<ATowerOffenseGameState>();
+	if (!IsValid(CurrentGameState)) return;
+
+	CurrentGameState->MulticastMatchStartDelayStarted(DelayBeforeStart);
+}
+
+bool ATowerOffenseGameMode::HasAnyTeamWon() const
+{
+	const ATowerOffenseGameState* CurrentGameState = GetGameState<ATowerOffenseGameState>();
+	if (!IsValid(CurrentGameState)) return false;
+
+	return FTeamHelper::GetTeams(CurrentGameState->ActiveParticipants).Num() == 1;
+}
+
+void ATowerOffenseGameMode::SyncRemainingTimeBeforeMatchStarts() const
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	ATowerOffenseGameState* CurrentGameState = GetGameState<ATowerOffenseGameState>();
+	if (!IsValid(CurrentGameState) || !CurrentGameState->IsWaitingForStart()) return;
+
+	const float RemainingTime = World->GetTimerManager().GetTimerRemaining(DelayTimerHandle);
+	CurrentGameState->InitialTimeBeforeStart = RemainingTime;
 }
 
 void ATowerOffenseGameMode::OnPawnSpawned(AActor* Actor)
 {
-	OnEnemySpawned(Actor);
-	OnPlayerSpawned(Actor);
+	OnParticipantSpawned(Actor);
 }
 
-void ATowerOffenseGameMode::OnPlayerSpawned(AActor* Actor)
+void ATowerOffenseGameMode::OnParticipantSpawned(AActor* Actor)
 {
-	ATankPawn* TankPawn = Cast<ATankPawn>(Actor);
-	if (!IsValid(TankPawn)) return;
+	ATurretPawn* TurretPawn = Cast<ATurretPawn>(Actor);
+	if (!IsValid(TurretPawn)) return;
 
-	SetupOnPlayerDestroyedDelegate(TankPawn);
-	Players.Add(TankPawn);
+	ATowerOffenseGameState* CurrentGameState = GetGameState<ATowerOffenseGameState>();
+	if (!IsValid(CurrentGameState)) return;
 
-	PlayersAmountChanged.Broadcast(Players);
+	TurretPawn->OnDestroyed.AddDynamic(this, &ATowerOffenseGameMode::OnParticipantDestroyed);
+	TurretPawn->MulticastSetActorTickEnabled(false);
+
+	CurrentGameState->AddParticipant(TurretPawn);
 }
 
-void ATowerOffenseGameMode::OnEnemyDestroyed(AActor* Actor)
+void ATowerOffenseGameMode::OnParticipantDestroyed(AActor* Actor)
 {
-	if (!IsValid(Actor) || !IsValid(EnemyClass) || !Actor->IsA(EnemyClass)) return;
+	ATurretPawn* TurretPawn = Cast<ATurretPawn>(Actor);
+	if (!IsValid(TurretPawn)) return;
 
-	SetEnemiesCount(EnemyCount - 1);
-	CheckAndSetupWinCondition();
+	ATowerOffenseGameState* CurrentGameState = GetGameState<ATowerOffenseGameState>();
+	if (!IsValid(CurrentGameState)) return;
+
+	CurrentGameState->RemoveParticipant(TurretPawn);
+	TryFinishingMatch();
 }
 
 void ATowerOffenseGameMode::OnStartDelay()
 {
-	DisableSelectedActorsTick();
-	DelayStartDelegate.Broadcast();
+	SetupParticipants();
+	DisableParticipantsTick();
+	ScheduleStartMatch();
 }
 
-void ATowerOffenseGameMode::OnFinishDelay()
+void ATowerOffenseGameMode::ToggleParticipantsTick(bool bShouldTick) const
 {
-	EnableSelectedActorsTick();
-	DelayFinishDelegate.Broadcast();
-}
-
-void ATowerOffenseGameMode::OnPlayerWins()
-{
-	PlayerWinsDelegate.Broadcast();
-}
-
-void ATowerOffenseGameMode::OnPlayerLoses()
-{
-	PlayerLosesDelegate.Broadcast();
-}
-
-void ATowerOffenseGameMode::CheckSetup() const
-{
-	if (!IsValid(EnemyClass))
-	{
-		UE_LOG(LogTowerOffenseGameMode, Error, TEXT("EnemyClass in is not set in TowerOffenseGameMode"));
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("EnemyClass in is not set in TowerOffenseGameMode"));
-		}
-	}
-}
-
-void ATowerOffenseGameMode::CheckAndSetupWinCondition()
-{
-	if (EnemyCount > 0) return;
-
-	SetupEndMatchDelay(&ATowerOffenseGameMode::OnPlayerWins);
-}
-
-void ATowerOffenseGameMode::ToggleSelectedActorsTick(bool bShouldTick) const
-{
-	if (!IsValid(DelayStartActorClass)) return;
-
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(World, DelayStartActorClass, FoundActors);
+	const ATowerOffenseGameState* CurrentGameState = GetGameState<ATowerOffenseGameState>();
+	if (!IsValid(CurrentGameState)) return;
 
-	for (AActor* Actor : FoundActors)
+	for (ATurretPawn* Actor : CurrentGameState->GetActiveParticipants())
 	{
 		if (!IsValid(Actor)) continue;
 
-		Actor->SetActorTickEnabled(bShouldTick);
+		Actor->MulticastSetActorTickEnabled(bShouldTick);
 	}
 }
 
-void ATowerOffenseGameMode::DisableSelectedActorsTick()
+void ATowerOffenseGameMode::DisableParticipantsTick() const
 {
-	bHasStarted = false;
-	ToggleSelectedActorsTick(false);
+	ToggleParticipantsTick(false);
 }
 
-void ATowerOffenseGameMode::EnableSelectedActorsTick()
+void ATowerOffenseGameMode::EnableParticipantsTick() const
 {
-	bHasStarted = true;
-	ToggleSelectedActorsTick(true);
+	ToggleParticipantsTick(true);
 }
 
 void ATowerOffenseGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	BroadcastRemainingTime();
+	SyncRemainingTimeBeforeMatchStarts();
 }
 
-void ATowerOffenseGameMode::BroadcastRemainingTime() const
+void ATowerOffenseGameMode::ActivateParticipants() const
 {
-	if (bHasStarted) return;
+	const ATowerOffenseGameState* CurrentGameState = GetGameState<ATowerOffenseGameState>();
+	if (!IsValid(CurrentGameState)) return;
 
+	for (ATurretPawn* Participant : CurrentGameState->GetActiveParticipants())
+	{
+		if (!IsValid(Participant)) continue;
+
+		Participant->MulticastSetActorTickEnabled(true);
+	}
+}
+
+void ATowerOffenseGameMode::StartMatch() const
+{
+	ActivateParticipants();
+	SetMatchState(ETowerOffenseMatchState::InProgress);
+}
+
+void ATowerOffenseGameMode::TryFinishingMatch()
+{
+	const TArray<ETeam> Teams = FTeamHelper::GetTeams(GetGameState<ATowerOffenseGameState>()->GetActiveParticipants());
+	if (Teams.Num() > 1) return;
+
+	const ETeam WinningTeam = Teams.Num() == 1 ? Teams[0] : ETeam::None;
+	ScheduleEndMatchDelay(WinningTeam);
+}
+
+void ATowerOffenseGameMode::ScheduleEndMatchDelay(const ETeam WinningTeam)
+{
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	const float TimerRemaining = World->GetTimerManager().GetTimerRemaining(DelayTimerHandle);
-	DelayRemainingTimeDelegate.Broadcast(TimerRemaining);
+	OnFinishDelayDelegate.BindUObject(this, &ATowerOffenseGameMode::FinishMatch, WinningTeam);
+	World->GetTimerManager().SetTimer(OnFinishDelayHandle, OnFinishDelayDelegate, DelayTime, false);
 }
 
-TArray<ATankPawn*> ATowerOffenseGameMode::GetPlayers() const
+void ATowerOffenseGameMode::FinishMatch(const ETeam WinningTeam) const
 {
-	return Players;
+	ATowerOffenseGameState* CurrentGameState = GetGameState<ATowerOffenseGameState>();
+	if (!IsValid(CurrentGameState)) return;
+
+	CurrentGameState->WinningTeam = WinningTeam;
+	SetMatchState(ETowerOffenseMatchState::Finished);
 }
 
-FDelegateHandle ATowerOffenseGameMode::AddPlayerWinsHandler(const FPlayerWinsDelegate::FDelegate& Delegate)
+void ATowerOffenseGameMode::SyncUserState(ATurretPawn* TurretPawn) const
 {
-	return PlayerWinsDelegate.Add(Delegate);
-}
+	ATowerOffenseGameState* CurrentGameState = GetGameState<ATowerOffenseGameState>();
+	if (!IsValid(CurrentGameState)) return;
 
-FDelegateHandle ATowerOffenseGameMode::AddPlayerLosesHandler(const FPlayerWinsDelegate::FDelegate& Delegate)
-{
-	return PlayerLosesDelegate.Add(Delegate);
-}
+	TurretPawn->OnRep_CurrentTeam();
+	const bool bShouldUserBeActive = CurrentGameState->IsInProgress();
 
-FDelegateHandle ATowerOffenseGameMode::AddEnemiesCountChangedHandler(const FOnEnemiesCountChangedDelegate::FDelegate& Delegate)
-{
-	return EnemiesCountChanged.Add(Delegate);
-}
-
-FDelegateHandle ATowerOffenseGameMode::AddDelayStartHandler(const FOnDelayStartDelegate::FDelegate& Delegate)
-{
-	return DelayStartDelegate.Add(Delegate);
-}
-
-FDelegateHandle ATowerOffenseGameMode::AddDelayFinishHandler(const FOnDelayStartDelegate::FDelegate& Delegate)
-{
-	return DelayFinishDelegate.Add(Delegate);
-}
-
-FDelegateHandle ATowerOffenseGameMode::AddDelayRemainingTimeHandler(const FOnDelayRemainingTimeDelegate::FDelegate& Delegate)
-{
-	return DelayRemainingTimeDelegate.Add(Delegate);
-}
-
-FDelegateHandle ATowerOffenseGameMode::AddPlayersAmountChangedHandler(const FOnPlayersAmountChangedDelegate::FDelegate& Delegate)
-{
-	return PlayersAmountChanged.Add(Delegate);
-}
-
-void ATowerOffenseGameMode::RemovePlayersAmountChangedHandler(const FDelegateHandle& Handle)
-{
-	PlayersAmountChanged.Remove(Handle);
+	TurretPawn->MulticastSetActorTickEnabled(bShouldUserBeActive);
+	CurrentGameState->SyncClientToMatchState();
 }

@@ -139,7 +139,7 @@ private:
 	void ServerMove(const float AxisValue, const float ElapsedTime);
 	void Move(const FInputActionInstance& ActionData);
 	float MoveReturningAccelerationValue_Internal(const float AxisValue, const float ElapsedTime);
-	
+
 	void OnMoveStopped();
 
 	UFUNCTION(Server, Reliable)
@@ -163,6 +163,8 @@ private:
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastUpdateSmokeEffectSpeed(float SmokeSpeed);
 	void ResetCooldownWidget() const;
+
+	void OnSetActorTickEnabled(const bool bEnabled);
 
 	void ActivateMovementSound();
 

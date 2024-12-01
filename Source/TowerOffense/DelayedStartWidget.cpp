@@ -1,5 +1,6 @@
 #include "DelayedStartWidget.h"
 
+#include "TowerOffenseGameState.h"
 #include "Kismet/GameplayStatics.h"
 
 void UDelayedStartWidget::NativeConstruct()
@@ -21,9 +22,9 @@ void UDelayedStartWidget::SetupOnDelayRemainingTimeDelegate()
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	ATowerOffenseGameMode* TowerOffenseGameMode = Cast<ATowerOffenseGameMode>(UGameplayStatics::GetGameMode(World));
-	if (!IsValid(TowerOffenseGameMode)) return;
+	ATowerOffenseGameState* TowerOffenseGameState = Cast<ATowerOffenseGameState>(World->GetGameState());
+	if (!IsValid(TowerOffenseGameState)) return;
 
 	OnDelayRemainingTimeDelegate.BindUObject(this, &UDelayedStartWidget::UpdateText);
-	OnDelayRemainingTimeDelegateHandle = TowerOffenseGameMode->AddDelayRemainingTimeHandler(OnDelayRemainingTimeDelegate);
+	OnDelayRemainingTimeDelegateHandle = TowerOffenseGameState->AddDelayRemainingTimeHandler(OnDelayRemainingTimeDelegate);
 }

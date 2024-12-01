@@ -1,5 +1,7 @@
 #include "EnemiesCountWidget.h"
 
+#include "TeamHelper.h"
+#include "TowerOffenseGameState.h"
 #include "Kismet/GameplayStatics.h"
 
 void UEnemiesCountWidget::SetupChangedEnemiesCountDelegate()
@@ -7,11 +9,20 @@ void UEnemiesCountWidget::SetupChangedEnemiesCountDelegate()
 	const UWorld* World = GetWorld();
 	if (!IsValid(World)) return;
 
-	ATowerOffenseGameMode* TowerOffenseGameMode = Cast<ATowerOffenseGameMode>(UGameplayStatics::GetGameMode(World));
-	if (!IsValid(TowerOffenseGameMode)) return;
+	ATowerOffenseGameState* TowerOffenseGameState = Cast<ATowerOffenseGameState>(World->GetGameState());
+	if (!IsValid(TowerOffenseGameState)) return;
 
-	OnEnemiesCountChangedDelegate.BindUObject(this, &UEnemiesCountWidget::UpdateText);
-	OnEnemiesCountChangedDelegateHandle = TowerOffenseGameMode->AddEnemiesCountChangedHandler(OnEnemiesCountChangedDelegate);
+	OnParticipantsAmountChangedDelegate.BindUObject(this, &UEnemiesCountWidget::OnParticipantsAmountChanged);
+	OnParticipantsAmountChangedDelegateHandle = TowerOffenseGameState->AddPlayersAmountChangedHandler(OnParticipantsAmountChangedDelegate);
+}
+
+void UEnemiesCountWidget::OnParticipantsAmountChanged(const TArray<ATurretPawn*>& Participants)
+{
+	const ATurretPawn* PlayerPawn = Cast<ATurretPawn>(GetOwningPlayerPawn());
+	if (!IsValid(PlayerPawn)) return;
+
+	const int32 EnemiesCount = FTeamHelper::GetEnemiesCount(Participants, PlayerPawn->GetTeam());
+	UpdateText(EnemiesCount);
 }
 
 void UEnemiesCountWidget::NativeConstruct()

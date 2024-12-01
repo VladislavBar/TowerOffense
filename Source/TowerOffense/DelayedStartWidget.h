@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "TowerOffenseGameMode.h"
+#include "TowerOffenseGameState.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/TextBlock.h"
 #include "DelayedStartWidget.generated.h"

@@ -1,12 +1,20 @@
 #include "TurretPawn.h"
 
+#include "HealthBarWidgetComponent.h"
 #include "NiagaraComponent.h"
 #include "TankPawn.h"
+#include "TeamData.h"
+#include "TeamHelper.h"
+#include "TowerOffenseGameState.h"
+#include "TowerOffensePlayerState.h"
 #include "Components/AudioComponent.h"
+#include "GameFramework/GameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Particles/ParticleSystemComponent.h"
+
+DEFINE_LOG_CATEGORY(LogTurretPawn);
 
 ATurretPawn::ATurretPawn()
 {
@@ -41,6 +49,9 @@ ATurretPawn::ATurretPawn()
 	OnRotationSoundComponent->SetupAttachment(TurretMesh);
 	OnRotationSoundComponent->bAutoActivate = false;
 	OnRotationSoundComponent->Stop();
+
+	HealthBarWidgetComponent = CreateDefaultSubobject<UHealthBarWidgetComponent>(TEXT("HealthBarWidgetComponent"));
+	HealthBarWidgetComponent->SetupAttachment(RootComponent);
 }
 
 TArray<FName> ATurretPawn::GetMaterialTeamColorSlotNames() const
@@ -204,11 +215,11 @@ void ATurretPawn::SetupOnDeathDelegate()
 
 void ATurretPawn::OnDeath()
 {
-	EmitOnDeathEffect();
+	MulticastEmitOnDeathEffect();
 	Destroy();
 }
 
-void ATurretPawn::EmitOnDeathEffect() const
+void ATurretPawn::MulticastEmitOnDeathEffect_Implementation() const
 {
 	EmitOnDeathSFX();
 	EmitOnDeathVFX();
@@ -269,11 +280,43 @@ void ATurretPawn::SetActorTickEnabled(bool bEnabled)
 	OnActorTickableEnabledDelegate.Broadcast(bEnabled);
 }
 
+void ATurretPawn::MulticastSetActorTickEnabled_Implementation(const bool bEnabled)
+{
+	SetActorTickEnabled(bEnabled);
+}
+
 void ATurretPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ATurretPawn, bCanFire);
+	DOREPLIFETIME(ATurretPawn, CurrentTeam);
+	DOREPLIFETIME(ATurretPawn, bIsInitialized);
+}
+
+void ATurretPawn::CommandLineSetTeam(const ETeam NewTeam)
+{
+	ServerSetTeam(NewTeam);
+}
+
+void ATurretPawn::ServerSetTeam_Implementation(const ETeam NewTeam)
+{
+	SetTeam(NewTeam);
+	OnRep_CurrentTeam();
+}
+
+void ATurretPawn::SetTeam(const ETeam NewTeam)
+{
+	CurrentTeam = NewTeam;
+	SyncPlayerStateTeam();
+}
+
+void ATurretPawn::SyncPlayerStateTeam_Implementation() const
+{
+	ATowerOffensePlayerState* CurrentPlayerState = Cast<ATowerOffensePlayerState>(GetPlayerState());
+	if (!IsValid(CurrentPlayerState)) return;
+
+	CurrentPlayerState->SetTeam(CurrentTeam);
 }
 
 void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
@@ -302,13 +345,22 @@ void ATurretPawn::RemoveOnActorTickableEnabledHandler(const FDelegateHandle& Han
 	OnActorTickableEnabledDelegate.Remove(Handle);
 }
 
+FDelegateHandle ATurretPawn::AddOnTeamChangedHandler(const FOnTeamChangedDelegate::FDelegate& Delegate)
+{
+	return OnTeamChangedDelegate.Add(Delegate);
+}
+
+void ATurretPawn::RemoveOnTeamChangedHandler(const FDelegateHandle& Handle)
+{
+	OnTeamChangedDelegate.Remove(Handle);
+}
+
 void ATurretPawn::RotateTurretMeshToLocation_Internal(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
 {
 	if (!IsValid(TurretMesh)) return;
 
 	if (bInstantRotation)
 	{
-
 		RotateWithoutInterp(Location, DeltaSeconds);
 	}
 	else
@@ -342,6 +394,25 @@ void ATurretPawn::OnRep_bCanFire()
 	}
 }
 
+void ATurretPawn::OnRep_CurrentTeam()
+{
+	UpdateMaterialTeamColor();
+	OnTeamChangedDelegate.Broadcast(this, CurrentTeam);
+	SyncPlayerStateTeam();
+}
+
+void ATurretPawn::UpdateMaterialTeamColor()
+{
+	SetupTeamColorDynamicMaterial(BaseMesh);
+	SetupTeamColorDynamicMaterial(TurretMesh);
+}
+
+void ATurretPawn::ServerFinishInitialization_Implementation()
+{
+	bIsInitialized = true;
+	OnRep_bIsInitialized();
+}
+
 void ATurretPawn::ServerRotateTurretMeshToLocation_Implementation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation)
 {
 	RotateTurretMeshToLocation_Internal(DeltaSeconds, Location, bInstantRotation);
@@ -369,9 +440,33 @@ void ATurretPawn::SetTargetLocation(const FVector& Location)
 	TargetLocation = Location;
 }
 
+void ATurretPawn::OnRep_bIsInitialized()
+{
+	if (!IsLocallyControlled()) return;
+
+	ServerSyncUserState();
+	UpdateMaterialTeamColor();
+}
+
+void ATurretPawn::ServerSyncUserState_Implementation()
+{
+	if (!bIsInitialized) return;
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
+
+	const ATowerOffenseGameState* GameState = World->GetGameStateChecked<ATowerOffenseGameState>();
+	if (!IsValid(GameState)) return;
+
+	GameState->ServerSyncUserState(this);
+}
+
 void ATurretPawn::SetupTeamColorDynamicMaterial(UStaticMeshComponent* Mesh)
 {
 	if (!IsValid(Mesh) || MaterialTeamColorSlotName.IsNone()) return;
+
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return;
 
 	const int32 MaterialIndex = Mesh->GetMaterialIndex(MaterialTeamColorSlotName);
 	if (MaterialIndex == INDEX_NONE) return;
@@ -379,23 +474,28 @@ void ATurretPawn::SetupTeamColorDynamicMaterial(UStaticMeshComponent* Mesh)
 	UMaterialInterface* Material = Mesh->GetMaterial(MaterialIndex);
 	if (!IsValid(Material)) return;
 
-	UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(Material, nullptr);
-	DynamicMaterial->SetVectorParameterValue(MaterialTeamColorParameterName, TeamColor);
+	if (!IsValid(TeamColorDynamicMaterial))
+	{
+		TeamColorDynamicMaterial = UMaterialInstanceDynamic::Create(Material, nullptr);
+	}
 
-	Mesh->SetMaterial(MaterialIndex, DynamicMaterial);
+	TeamColor = GetTeamColor();
+	TeamColorDynamicMaterial->SetVectorParameterValue(MaterialTeamColorParameterName, TeamColor);
+
+	Mesh->SetMaterial(MaterialIndex, TeamColorDynamicMaterial);
 }
 
 void ATurretPawn::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	SetupTeamColorDynamicMaterial(BaseMesh);
-	SetupTeamColorDynamicMaterial(TurretMesh);
+	UpdateMaterialTeamColor();
 }
 
 void ATurretPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	RotateTurretMesh(DeltaSeconds);
+	RefreshHealthBarVisibility();
 }
 
 void ATurretPawn::BeginPlay()
@@ -404,6 +504,12 @@ void ATurretPawn::BeginPlay()
 	SetupOnDeathDelegate();
 	AdjustRotationSoundVolume(0.f);
 	EnableRotationSound();
+	RefreshHealthBarVisibility();
+
+	if (IsLocallyControlled() || (HasAuthority() && GetRemoteRole() == ROLE_SimulatedProxy))
+	{
+		ServerFinishInitialization();
+	}
 }
 
 bool ATurretPawn::CanReach(const AActor* Target, const float MaxDistance) const
@@ -475,4 +581,60 @@ FRotator ATurretPawn::GetRelativeTurretMeshRotation() const
 	if (!IsValid(TurretMesh)) return FRotator::ZeroRotator;
 
 	return TurretMesh->GetRelativeRotation();
+}
+
+void ATurretPawn::RefreshHealthBarVisibility() const
+{
+	if (!IsValid(HealthBarWidgetComponent)) return;
+
+	const bool bIsVisibleToPlayer = IsVisibleToPlayer();
+	if (HealthBarWidgetComponent->IsVisible() != bIsVisibleToPlayer)
+	{
+		HealthBarWidgetComponent->SetVisibility(bIsVisibleToPlayer);
+	}
+}
+
+bool ATurretPawn::IsVisibleToPlayer() const
+{
+	const UWorld* World = GetWorld();
+	if (!IsValid(World)) return false;
+
+	const APlayerController* PlayerController = World->GetFirstPlayerController();
+	if (!IsValid(PlayerController)) return false;
+
+	const APawn* PlayerPawn = PlayerController->GetPawn();
+	if (!IsValid(PlayerPawn) || PlayerPawn == this) return false;
+
+	const ATowerOffenseGameState* GameState = Cast<ATowerOffenseGameState>(World->GetGameState());
+	if (!IsValid(GameState)) return false;
+
+	const TArray<AActor*> ActiveParticipants{GameState->GetActiveParticipants()};
+	const TArray<AActor*> IgnoredActors = ActiveParticipants.FilterByPredicate([this, PlayerPawn](AActor* Actor) { return Actor != PlayerPawn; });
+
+	FHitResult HitResult;
+	FCollisionQueryParams CollisionQueryParams;
+	CollisionQueryParams.AddIgnoredActors(IgnoredActors);
+	World->LineTraceSingleByChannel(HitResult, GetActorLocation(), PlayerPawn->GetActorLocation(), ECC_Visibility, CollisionQueryParams);
+
+	return HitResult.GetActor() == PlayerPawn;
+}
+
+FColor ATurretPawn::GetTeamColor() const
+{
+	if (!IsValid(TeamColorTable))
+	{
+		UE_LOG(LogTurretPawn, Error, TEXT("TeamColorTable is not set"));
+		return FColor::Black;
+	}
+
+	TArray<FTeamData*> TeamColorRows;
+	TeamColorTable->GetAllRows<FTeamData>("", TeamColorRows);
+
+	for (const FTeamData* TeamData : TeamColorRows)
+	{
+		if (TeamData->Team == CurrentTeam) return TeamData->Color.ToFColor(true);
+	}
+
+	UE_LOG(LogTurretPawn, Error, TEXT("Team color for team %d is not set"), static_cast<int32>(CurrentTeam));
+	return FColor::Black;
 }

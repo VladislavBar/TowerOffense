@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "TowerOffenseGameMode.h"
+#include "TowerOffenseGameState.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/TextBlock.h"
 #include "EnemiesCountWidget.generated.h"
@@ -14,9 +14,10 @@ class TOWEROFFENSE_API UEnemiesCountWidget : public UUserWidget
 	UPROPERTY(EditInstanceOnly, meta = (BindWidget))
 	TObjectPtr<UTextBlock> EnemiesCountText;
 
-	FOnEnemiesCountChangedDelegate::FDelegate OnEnemiesCountChangedDelegate;
-	FDelegateHandle OnEnemiesCountChangedDelegateHandle;
+	FOnParticipantsAmountChangedDelegate::FDelegate OnParticipantsAmountChangedDelegate;
+	FDelegateHandle OnParticipantsAmountChangedDelegateHandle;
 
+	void OnParticipantsAmountChanged(const TArray<ATurretPawn*>& Participants);
 	virtual void NativeConstruct() override;
 	void UpdateText(int32 EnemiesCount);
 	void SetupChangedEnemiesCountDelegate();
