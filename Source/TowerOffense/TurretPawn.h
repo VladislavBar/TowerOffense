@@ -2,8 +2,10 @@
 
 #include "Components/CapsuleComponent.h"
 #include "CoreMinimal.h"
+#include "CustomReplicationCapsuleComp.h"
 #include "HealthComponent.h"
 #include "Projectile.h"
+#include "SkipOwnerReplSceneComponent.h"
 #include "GameFramework/Pawn.h"
 
 #include "TurretPawn.generated.h"
@@ -56,7 +58,7 @@ class TOWEROFFENSE_API ATurretPawn : public APawn
 	friend class ATowerOffenseGameMode;
 
 	UPROPERTY(EditAnywhere)
-	TObjectPtr<UCapsuleComponent> NewRootComponent;
+	TObjectPtr<UCustomReplicationCapsuleComp> NewRootComponent;
 
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentTeam, EditAnywhere, Category = "Turret|Team")
 	ETeam CurrentTeam = ETeam::Team1;
@@ -105,7 +107,7 @@ protected:
 	TObjectPtr<UStaticMeshComponent> BaseMesh;
 
 	UPROPERTY(EditAnywhere)
-	TObjectPtr<UStaticMeshComponent> TurretMesh;
+	TObjectPtr<USkipOwnerReplSceneComponent> TurretMesh;
 
 	UPROPERTY()
 	UMaterialInstanceDynamic* TeamColorDynamicMaterial;
@@ -176,16 +178,11 @@ public:
 	void UpdateMaterialTeamColor();
 
 private:
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void ServerFire();
-
-	void RotateTurretMeshToLocation_Internal(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
 
 	UFUNCTION(Server, Unreliable)
 	void ServerRotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
-
-	UFUNCTION(Client, Unreliable)
-	void ClientRotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
 	void PlaySoundOnRotation(const FRotator& PreviousRotation);
 
 	UFUNCTION()
@@ -196,6 +193,12 @@ private:
 
 	UFUNCTION(Server, Reliable)
 	void ServerFinishInitialization();
+
+protected:
+	UFUNCTION(Client, Unreliable)
+	virtual void ClientRotateTurretMeshToLocation(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
+	void RotateTurretMeshToLocation_Internal(const float DeltaSeconds, const FVector& Location, bool bInstantRotation = false);
+
 
 public:
 	void TakeHit(float DamageAmount);
