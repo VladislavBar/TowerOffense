@@ -2,6 +2,7 @@
 
 #include "HealthBarWidgetComponent.h"
 #include "NiagaraComponent.h"
+#include "SkipOwnerReplSceneComponent.h"
 #include "TankPawn.h"
 #include "TeamData.h"
 #include "TeamHelper.h"
@@ -24,7 +25,7 @@ ATurretPawn::ATurretPawn()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
 
-	NewRootComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("RootComponent"));
+	NewRootComponent = CreateDefaultSubobject<UCustomReplicationCapsuleComp>(TEXT("RootComponent"));
 	RootComponent = NewRootComponent;
 	RootComponent->SetIsReplicated(true);
 
@@ -32,7 +33,7 @@ ATurretPawn::ATurretPawn()
 	BaseMesh->SetupAttachment(RootComponent);
 	BaseMesh->SetIsReplicated(true);
 
-	TurretMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TurretMesh"));
+	TurretMesh = CreateDefaultSubobject<USkipOwnerReplSceneComponent>(TEXT("TurretMesh"));
 	TurretMesh->SetupAttachment(RootComponent);
 	TurretMesh->SetIsReplicated(true);
 
@@ -116,11 +117,6 @@ void ATurretPawn::ServerFire_Implementation()
 
 	DisableFire();
 	OnSuccessfulFire();
-}
-
-bool ATurretPawn::ServerFire_Validate()
-{
-	return CanFire();
 }
 
 void ATurretPawn::MulticastPlayVFXOnFire_Implementation() const
@@ -323,7 +319,6 @@ void ATurretPawn::RotateTurretMeshToLocation(const float DeltaSeconds, const FVe
 {
 	if (IsLocallyControlled())
 	{
-		ServerRotateTurretMeshToLocation(DeltaSeconds, Location, bInstantRotation);
 		ClientRotateTurretMeshToLocation(DeltaSeconds, Location, bInstantRotation);
 		return;
 	}
