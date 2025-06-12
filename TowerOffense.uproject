@@ -4,18 +4,26 @@
 	"Category": "",
 	"Description": "",
 	"Modules": [
-		{
-			"Name": "TowerOffense",
-			"Type": "Runtime",
-			"LoadingPhase": "Default",
-			"AdditionalDependencies": [
-				"Engine",
-				"AIModule",
-				"UMG",
-				"CoreUObject"
-			]
-		}
-	],
+                {
+                        "Name": "TowerOffense",
+                        "Type": "Runtime",
+                        "LoadingPhase": "Default",
+                        "AdditionalDependencies": [
+                                "Engine",
+                                "AIModule",
+                                "UMG",
+                                "CoreUObject"
+                        ]
+                },
+                {
+                        "Name": "TowerOffenseTests",
+                        "Type": "Developer",
+                        "LoadingPhase": "Default",
+                        "AdditionalDependencies": [
+                                "TowerOffense"
+                        ]
+                }
+        ],
 	"Plugins": [
 		{
 			"Name": "ModelingToolsEditorMode",
